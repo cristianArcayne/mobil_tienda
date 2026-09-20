@@ -1,0 +1,43 @@
+name: fashionstore_movil
+description: "Aplicación móvil FashionStore para gestión omnicanal, catálogo, reservas, carrito, ventas, vestidor virtual y recomendaciones con IA."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Navegación y UI
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  intl: ^0.19.0
+  cached_network_image: ^3.3.1
+  flutter_spinkit: ^5.2.0
+  
+  # Manejo de Estado
+  provider: ^6.1.1
+  
+  # Conectividad HTTP & REST
+  http: ^1.2.0
+  dio: ^5.4.1
+  
+  # Almacenamiento Local Persistente
+  shared_preferences: ^2.2.2
+  
+  # Cámara y Multimedia
+  image_picker: ^1.0.7
+  
+  # Animaciones e interactividad
+  flutter_animate: ^4.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
