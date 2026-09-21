@@ -38,28 +38,67 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   }
 
   Future<void> _cargarBytesPrenda(PrendaModel prenda) async {
-    setState(() => _cargandoPrenda = true);
-    String? url = prenda.imagenPrincipal;
-    if ((url == null || url.isEmpty) && prenda.imagenes.isNotEmpty) {
-      url = prenda.imagenes.first;
-    }
+    setState(() {
+      _cargandoPrenda = true;
+      _prendaBytes = null;
+    });
 
-    if (url != null && url.isNotEmpty) {
-      final formattedUrl = Environment.formatImageUrl(url);
-      try {
-        final res = await http.get(Uri.parse(formattedUrl));
-        if (res.statusCode == 200) {
-          setState(() {
-            _prendaBytes = res.bodyBytes;
-            _prendaMime = formattedUrl.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
-            _cargandoPrenda = false;
-          });
-          return;
-        }
-      } catch (e) {
-        debugPrint('Error descargando imagen de prenda: $e');
+    // Recopilar todas las URLs posibles de imagen
+    List<String> urlsToTry = [];
+    
+    if (prenda.imagenPrincipal != null && prenda.imagenPrincipal!.isNotEmpty) {
+      urlsToTry.add(prenda.imagenPrincipal!);
+    }
+    for (final img in prenda.imagenes) {
+      if (img.isNotEmpty && !urlsToTry.contains(img)) {
+        urlsToTry.add(img);
       }
     }
+
+    for (final url in urlsToTry) {
+      final formattedUrl = Environment.formatImageUrl(url);
+      debugPrint('Vestidor: Intentando descargar prenda desde: $formattedUrl');
+      try {
+        final res = await http.get(Uri.parse(formattedUrl)).timeout(const Duration(seconds: 15));
+        debugPrint('Vestidor: Respuesta ${res.statusCode}, Content-Type: ${res.headers['content-type']}, bytes: ${res.bodyBytes.length}');
+        
+        if (res.statusCode == 200 && res.bodyBytes.length > 100) {
+          // Verificar que no sea HTML (un error de servidor)
+          final contentType = res.headers['content-type'] ?? '';
+          final primeros = String.fromCharCodes(res.bodyBytes.take(20));
+          if (primeros.contains('<!DOCTYPE') || primeros.contains('<html')) {
+            debugPrint('Vestidor: La respuesta es HTML, no una imagen. Saltando...');
+            continue;
+          }
+
+          // Detectar mime type por magic bytes
+          String mime = 'image/jpeg';
+          if (res.bodyBytes.length > 4) {
+            if (res.bodyBytes[0] == 0xFF && res.bodyBytes[1] == 0xD8) {
+              mime = 'image/jpeg';
+            } else if (res.bodyBytes[0] == 0x89 && res.bodyBytes[1] == 0x50) {
+              mime = 'image/png';
+            } else if (res.bodyBytes[0] == 0x52 && res.bodyBytes[1] == 0x49) {
+              mime = 'image/webp';
+            }
+          }
+          
+          if (contentType.contains('image') || mime != 'image/jpeg' || (res.bodyBytes[0] == 0xFF && res.bodyBytes[1] == 0xD8)) {
+            setState(() {
+              _prendaBytes = res.bodyBytes;
+              _prendaMime = mime;
+              _cargandoPrenda = false;
+            });
+            debugPrint('Vestidor: Prenda descargada OK - ${res.bodyBytes.length} bytes, mime: $mime');
+            return;
+          }
+        }
+      } catch (e) {
+        debugPrint('Vestidor: Error descargando imagen de prenda desde $formattedUrl: $e');
+      }
+    }
+    
+    debugPrint('Vestidor: No se pudo descargar ninguna imagen válida de la prenda');
     setState(() => _cargandoPrenda = false);
   }
 
@@ -116,10 +155,12 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Por favor selecciona una prenda con imagen disponible.'),
+          SnackBar(
+            content: Text(_prendaSeleccionada != null
+                ? 'No se pudo descargar la imagen de "${_prendaSeleccionada!.nombre}". Intenta con otra prenda que tenga imagen.'
+                : 'Por favor selecciona una prenda del catálogo.'),
             behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 4),
           ),
         );
         return;
@@ -225,7 +266,7 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '💡 Consejo: Asegúrate de que la foto muestre a una persona de cuerpo entero o torso claro, con buena iluminación.',
+                    '💡 Consejo: Puedes usar fotos de cara, medio cuerpo o cuerpo entero. Asegúrate de tener buena iluminación y que la prenda tenga imagen válida.',
                     style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Color(0xFF991B1B)),
                   ),
                 ],
@@ -253,7 +294,7 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                       Text('Vestidor Fotorrealista Segmind IA',
                           style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1E1B4B))),
                       SizedBox(height: 2),
-                      Text('Tómate una foto y visualiza la prenda adaptada a tu cuerpo con precisión fotorrealista.',
+                      Text('Tómate una foto (cara, medio cuerpo o completo) y visualiza la prenda adaptada con precisión fotorrealista.',
                           style: TextStyle(fontSize: 12, color: Color(0xFF4338CA))),
                     ],
                   ),

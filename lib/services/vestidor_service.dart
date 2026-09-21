@@ -79,8 +79,32 @@ class VestidorService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Validar que los bytes de la prenda son realmente una imagen (no HTML/error)
+      if (prendaBytes.length < 100) {
+        throw Exception('La imagen de la prenda es demasiado pequeña o no se descargó correctamente. Intenta con otra prenda.');
+      }
+      // Verificar que NO sea una respuesta HTML (errores del servidor)
+      final primeros = String.fromCharCodes(prendaBytes.take(50));
+      if (primeros.contains('<!DOCTYPE') || primeros.contains('<html') || primeros.contains('<!doctype')) {
+        throw Exception('La imagen de la prenda no se pudo descargar del servidor. Intenta con otra prenda que tenga imagen válida.');
+      }
+
+      // Detectar mime type real de la prenda por magic bytes
+      String prendaMimeReal = prendaMimeType;
+      if (prendaBytes.length > 4) {
+        if (prendaBytes[0] == 0xFF && prendaBytes[1] == 0xD8) {
+          prendaMimeReal = 'image/jpeg';
+        } else if (prendaBytes[0] == 0x89 && prendaBytes[1] == 0x50) {
+          prendaMimeReal = 'image/png';
+        } else if (prendaBytes[0] == 0x47 && prendaBytes[1] == 0x49) {
+          prendaMimeReal = 'image/gif';
+        } else if (prendaBytes[0] == 0x52 && prendaBytes[1] == 0x49) {
+          prendaMimeReal = 'image/webp';
+        }
+      }
+
       final personaDataUrl = 'data:$personaMimeType;base64,${base64Encode(personaBytes)}';
-      final prendaDataUrl = 'data:$prendaMimeType;base64,${base64Encode(prendaBytes)}';
+      final prendaDataUrl = 'data:$prendaMimeReal;base64,${base64Encode(prendaBytes)}';
 
       _loadingStatus = 'Segmind IDM-VTON está vistiendo la prenda en tu cuerpo (puede tardar unos 20-30s)...';
       notifyListeners();
@@ -89,7 +113,7 @@ class VestidorService extends ChangeNotifier {
         'human_img': personaDataUrl,
         'garm_img': prendaDataUrl,
         'category': category,
-        'crop': false,
+        'crop': true,
         'seed': 42,
         'steps': 30,
         'garment_des': 'clothing item'
@@ -102,10 +126,16 @@ class VestidorService extends ChangeNotifier {
           'Content-Type': 'application/json',
         },
         body: jsonEncode(requestBody),
-      ).timeout(const Duration(seconds: 90));
+      ).timeout(const Duration(seconds: 120));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        // Segmind devuelve directamente los bytes de la imagen JPEG
+        // Verificar que la respuesta sea realmente una imagen
+        final contentType = response.headers['content-type'] ?? '';
+        if (response.bodyBytes.length < 1000 && !contentType.contains('image')) {
+          // Podría ser un error en texto
+          final body = utf8.decode(response.bodyBytes, allowMalformed: true);
+          throw Exception('Segmind respondió pero no generó imagen: $body');
+        }
         final b64Result = base64Encode(response.bodyBytes);
         _resultadoImageBase64 = b64Result;
         _isLoading = false;
@@ -118,9 +148,18 @@ class VestidorService extends ChangeNotifier {
         try {
           final errJson = jsonDecode(utf8.decode(response.bodyBytes));
           final msg = errJson['error'] ?? errJson['message'] ?? response.body;
-          throw Exception('Segmind: $msg');
+          String errorMsg = msg.toString();
+          // Traducir errores comunes
+          if (errorMsg.contains('No human detected')) {
+            errorMsg = 'No se detectó una persona en la foto. Toma una foto donde se vea al menos tu torso o cuerpo entero.';
+          } else if (errorMsg.contains('Invalid Garment')) {
+            errorMsg = 'La imagen de la prenda no es válida. Intenta con otra prenda del catálogo que tenga una imagen clara.';
+          } else if (errorMsg.contains('credit') || errorMsg.contains('balance')) {
+            errorMsg = 'Sin créditos en Segmind. Recarga tu cuenta en segmind.com';
+          }
+          throw Exception(errorMsg);
         } catch (e) {
-          if (e.toString().contains('Segmind:')) rethrow;
+          if (e.toString().contains('Exception:')) rethrow;
           throw Exception('Error en Segmind IDM-VTON (${response.statusCode}): ${response.body}');
         }
       }
