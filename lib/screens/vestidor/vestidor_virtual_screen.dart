@@ -62,8 +62,8 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
       descripcion: 'Polera básica de algodón ideal para vestir con IA',
       precio: 89.0,
       categoriaNombre: 'Superior',
-      imagenPrincipal: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80',
-      imagenes: ['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'],
+      imagenPrincipal: '/static/uploads/polera_blanca_algodon.jpg',
+      imagenes: ['/static/uploads/polera_blanca_algodon.jpg'],
       stockTotalDisponible: 10,
       estadoGlobalStock: 'DISPONIBLE',
       variantes: [],
@@ -71,23 +71,23 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
     PrendaModel(
       id: -2,
       nombre: 'Sudadera Roja Casual',
-      descripcion: 'Sudadera roja casual de alta definición',
+      descripcion: 'Sudadera roja casual con cierre',
       precio: 159.0,
       categoriaNombre: 'Superior',
-      imagenPrincipal: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80',
-      imagenes: ['https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80'],
+      imagenPrincipal: '/static/uploads/sudadera_roja_casual.jpg',
+      imagenes: ['/static/uploads/sudadera_roja_casual.jpg'],
       stockTotalDisponible: 10,
       estadoGlobalStock: 'DISPONIBLE',
       variantes: [],
     ),
     PrendaModel(
       id: -3,
-      nombre: 'Chaqueta Denim',
-      descripcion: 'Chaqueta vaquera denim clásica',
+      nombre: 'Chaqueta Denim Clásica',
+      descripcion: 'Chaqueta vaquera denim clásica azul',
       precio: 220.0,
       categoriaNombre: 'Superior',
-      imagenPrincipal: 'https://images.unsplash.com/photo-1543076447-215ad9ba6923?w=800&auto=format&fit=crop&q=80',
-      imagenes: ['https://images.unsplash.com/photo-1543076447-215ad9ba6923?w=800&auto=format&fit=crop&q=80'],
+      imagenPrincipal: '/static/uploads/chaqueta_denim_clasica.jpg',
+      imagenes: ['/static/uploads/chaqueta_denim_clasica.jpg'],
       stockTotalDisponible: 10,
       estadoGlobalStock: 'DISPONIBLE',
       variantes: [],
@@ -95,23 +95,23 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
     PrendaModel(
       id: -4,
       nombre: 'Pantalón Jean Slim',
-      descripcion: 'Pantalón jean azul para probar prenda inferior',
+      descripcion: 'Pantalón jean azul slim fit',
       precio: 180.0,
       categoriaNombre: 'Inferior',
-      imagenPrincipal: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80',
-      imagenes: ['https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80'],
+      imagenPrincipal: '/static/uploads/jean_slim_azul.jpg',
+      imagenes: ['/static/uploads/jean_slim_azul.jpg'],
       stockTotalDisponible: 10,
       estadoGlobalStock: 'DISPONIBLE',
       variantes: [],
     ),
     PrendaModel(
       id: -5,
-      nombre: 'Vestido Estampado',
-      descripcion: 'Vestido de verano para prueba de vestidos',
+      nombre: 'Vestido Estampado Floral',
+      descripcion: 'Vestido de verano estampado floral',
       precio: 210.0,
       categoriaNombre: 'Vestidos',
-      imagenPrincipal: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=800&auto=format&fit=crop&q=80',
-      imagenes: ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=800&auto=format&fit=crop&q=80'],
+      imagenPrincipal: '/static/uploads/vestido_estampado_floral.jpg',
+      imagenes: ['/static/uploads/vestido_estampado_floral.jpg'],
       stockTotalDisponible: 10,
       estadoGlobalStock: 'DISPONIBLE',
       variantes: [],
@@ -119,11 +119,19 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   ];
 
   List<PrendaModel> _getPrendas(CatalogoService catalogo) {
-    List<PrendaModel> list = [..._demoPrendas];
+    // Priorizar prendas reales del catálogo (ya cargadas del backend)
+    List<PrendaModel> list = [];
+    
+    // Primero agregar todas las prendas reales del catálogo
     for (var p in catalogo.prendas) {
       if (!list.any((element) => element.id == p.id)) {
         list.add(p);
       }
+    }
+    
+    // Si el catálogo está vacío, agregar las prendas demo como respaldo
+    if (list.isEmpty) {
+      list.addAll(_demoPrendas);
     }
 
     if (_searchQuery.trim().isNotEmpty) {
@@ -148,13 +156,26 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   @override
   void initState() {
     super.initState();
-    _prendaSeleccionada = widget.prendaInicial ?? _demoPrendas.first;
-    _cargarBytesPrenda(_prendaSeleccionada!);
+    _prendaSeleccionada = widget.prendaInicial;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final catalogo = Provider.of<CatalogoService>(context, listen: false);
       if (catalogo.prendas.isEmpty) {
-        catalogo.cargarCatalogo();
+        await catalogo.cargarCatalogo();
+      }
+      // Auto-seleccionar la primera prenda del catálogo real si no hay prendaInicial
+      if (_prendaSeleccionada == null && catalogo.prendas.isNotEmpty) {
+        setState(() {
+          _prendaSeleccionada = catalogo.prendas.first;
+        });
+        _cargarBytesPrenda(_prendaSeleccionada!);
+      } else if (_prendaSeleccionada == null && _demoPrendas.isNotEmpty) {
+        setState(() {
+          _prendaSeleccionada = _demoPrendas.first;
+        });
+        _cargarBytesPrenda(_prendaSeleccionada!);
+      } else if (_prendaSeleccionada != null) {
+        _cargarBytesPrenda(_prendaSeleccionada!);
       }
     });
   }
@@ -227,9 +248,9 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   Future<void> _tomarFotoCamara() async {
     final XFile? photo = await _picker.pickImage(
       source: ImageSource.camera,
-      maxWidth: 768,
-      maxHeight: 1024,
-      imageQuality: 75,
+      maxWidth: 1024,
+      maxHeight: 1368,
+      imageQuality: 85,
     );
     if (photo != null) {
       final bytes = await photo.readAsBytes();
@@ -243,9 +264,9 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   Future<void> _seleccionarFotoGaleria() async {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 768,
-      maxHeight: 1024,
-      imageQuality: 75,
+      maxWidth: 1024,
+      maxHeight: 1368,
+      imageQuality: 85,
     );
     if (image != null) {
       final bytes = await image.readAsBytes();

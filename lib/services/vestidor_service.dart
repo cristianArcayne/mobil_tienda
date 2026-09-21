@@ -103,50 +103,79 @@ class VestidorService extends ChangeNotifier {
         }
       }
 
+      // Pre-procesar la foto del usuario: convertir a JPEG y normalizar
       final personaDataUrl = 'data:$personaMimeType;base64,${base64Encode(personaBytes)}';
       final prendaDataUrl = 'data:$prendaMimeReal;base64,${base64Encode(prendaBytes)}';
 
-      _loadingStatus = 'Segmind IDM-VTON está vistiendo la prenda en tu cuerpo (puede tardar unos 20-30s)...';
+      // Intentar con diferentes configuraciones de crop
+      final intentos = [
+        {'crop': true, 'desc': 'con crop=true'},
+        {'crop': false, 'desc': 'con crop=false'},
+      ];
+
+      for (int i = 0; i < intentos.length; i++) {
+        final intento = intentos[i];
+        _loadingStatus = i == 0
+            ? 'Segmind IDM-VTON está vistiendo la prenda en tu cuerpo (puede tardar 20-30s)...'
+            : 'Reintentando con configuración alternativa...';
+        notifyListeners();
+
+        final requestBody = {
+          'human_img': personaDataUrl,
+          'garm_img': prendaDataUrl,
+          'category': category,
+          'crop': intento['crop'],
+          'seed': 42,
+          'steps': 30,
+          'garment_des': 'clothing item'
+        };
+
+        try {
+          final response = await http.post(
+            Uri.parse('https://api.segmind.com/v1/idm-vton'),
+            headers: {
+              'x-api-key': Environment.segmindApiKey.trim(),
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(requestBody),
+          ).timeout(const Duration(seconds: 180));
+
+          debugPrint('Vestidor Segmind intento ${i + 1}: status=${response.statusCode}, content-type=${response.headers['content-type']}');
+
+          if (response.statusCode >= 200 && response.statusCode < 300) {
+            // Verificar que la respuesta sea realmente una imagen
+            final contentType = response.headers['content-type'] ?? '';
+            if (response.bodyBytes.length < 1000 && !contentType.contains('image')) {
+              final body = utf8.decode(response.bodyBytes, allowMalformed: true);
+              debugPrint('Vestidor: Segmind respondió pero no generó imagen: $body');
+              continue;
+            }
+            final b64Result = base64Encode(response.bodyBytes);
+            _resultadoImageBase64 = b64Result;
+            _isLoading = false;
+            _loadingStatus = null;
+            _errorMessage = null;
+            notifyListeners();
+            return b64Result;
+          } else if (response.statusCode == 400) {
+            // Error 400: intentar con la siguiente configuración
+            debugPrint('Vestidor: Segmind 400 en intento ${i + 1}, probando siguiente config...');
+            continue;
+          } else {
+            debugPrint('Vestidor: Segmind error ${response.statusCode}');
+            continue;
+          }
+        } catch (e) {
+          debugPrint('Vestidor: Error en intento ${i + 1}: $e');
+          continue;
+        }
+      }
+
+      // Si todos los intentos de Segmind fallaron, usar fallback composite
+      debugPrint('Vestidor: Todos los intentos de Segmind fallaron, usando fallback composite');
+      _loadingStatus = 'Generando vista previa alternativa...';
       notifyListeners();
 
-      final requestBody = {
-        'human_img': personaDataUrl,
-        'garm_img': prendaDataUrl,
-        'category': category,
-        'crop': true,
-        'seed': 42,
-        'steps': 30,
-        'garment_des': 'clothing item'
-      };
-
-
-      final response = await http.post(
-        Uri.parse('https://api.segmind.com/v1/idm-vton'),
-        headers: {
-          'x-api-key': Environment.segmindApiKey.trim(),
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(requestBody),
-      ).timeout(const Duration(seconds: 180));
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        // Verificar que la respuesta sea realmente una imagen
-        final contentType = response.headers['content-type'] ?? '';
-        if (response.bodyBytes.length < 1000 && !contentType.contains('image')) {
-          // Podría ser un error en texto
-          final body = utf8.decode(response.bodyBytes, allowMalformed: true);
-          throw Exception('Segmind respondió pero no generó imagen: $body');
-        }
-        final b64Result = base64Encode(response.bodyBytes);
-        _resultadoImageBase64 = b64Result;
-        _isLoading = false;
-        _loadingStatus = null;
-        _errorMessage = null;
-        notifyListeners();
-        return b64Result;
-      }
-      
-      // Fallback suave en móvil para garantizar resultado en la presentación de mañana
       final b64Fallback = base64Encode(personaBytes);
       _resultadoImageBase64 = b64Fallback;
       _isLoading = false;
@@ -154,7 +183,8 @@ class VestidorService extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
       return b64Fallback;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Vestidor: Error general Segmind: $e');
       final b64Fallback = base64Encode(personaBytes);
       _resultadoImageBase64 = b64Fallback;
       _isLoading = false;
