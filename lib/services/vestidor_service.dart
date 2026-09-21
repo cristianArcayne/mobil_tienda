@@ -113,9 +113,9 @@ class VestidorService extends ChangeNotifier {
         'human_img': personaDataUrl,
         'garm_img': prendaDataUrl,
         'category': category,
-        'crop': true,
+        'crop': false,
         'seed': 42,
-        'steps': 30,
+        'steps': 20,
         'garment_des': 'clothing item'
       };
 
@@ -126,7 +126,7 @@ class VestidorService extends ChangeNotifier {
           'Content-Type': 'application/json',
         },
         body: jsonEncode(requestBody),
-      ).timeout(const Duration(seconds: 120));
+      ).timeout(const Duration(seconds: 180));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // Verificar que la respuesta sea realmente una imagen
@@ -151,11 +151,11 @@ class VestidorService extends ChangeNotifier {
           String errorMsg = msg.toString();
           // Traducir errores comunes
           if (errorMsg.contains('No human detected')) {
-            errorMsg = 'No se detectó una persona en la foto. Toma una foto donde se vea al menos tu torso o cuerpo entero.';
+            errorMsg = 'No se detectó una persona clara en la foto. Toma una foto con buena luz mostrando tu torso o cuerpo entero.';
           } else if (errorMsg.contains('Invalid Garment')) {
-            errorMsg = 'La imagen de la prenda no es válida. Intenta con otra prenda del catálogo que tenga una imagen clara.';
+            errorMsg = 'La imagen de esta prenda no pudo ser procesada por la IA. Por favor selecciona otra prenda del catálogo.';
           } else if (errorMsg.contains('credit') || errorMsg.contains('balance')) {
-            errorMsg = 'Sin créditos en Segmind. Recarga tu cuenta en segmind.com';
+            errorMsg = 'Sin créditos suficientes en Segmind. Recarga tu saldo en segmind.com';
           }
           throw Exception(errorMsg);
         } catch (e) {
@@ -164,7 +164,11 @@ class VestidorService extends ChangeNotifier {
         }
       }
     } catch (e) {
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      String msg = e.toString().replaceAll('Exception: ', '');
+      if (msg.contains('TimeoutException') || msg.contains('Future not completed') || msg.contains('Timeout')) {
+        msg = 'La IA tardó demasiado tiempo en responder (Tiempo de espera agotado). Por favor intenta de nuevo o selecciona otra prenda.';
+      }
+      _errorMessage = msg;
       _isLoading = false;
       _loadingStatus = null;
       notifyListeners();

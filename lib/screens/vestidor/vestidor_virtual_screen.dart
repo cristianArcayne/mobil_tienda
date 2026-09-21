@@ -32,6 +32,25 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   void initState() {
     super.initState();
     _prendaSeleccionada = widget.prendaInicial;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final catalogo = Provider.of<CatalogoService>(context, listen: false);
+      if (catalogo.prendas.isEmpty) {
+        catalogo.cargarCatalogo().then((_) {
+          if (_prendaSeleccionada == null && catalogo.prendas.isNotEmpty) {
+            setState(() {
+              _prendaSeleccionada = catalogo.prendas.first;
+            });
+            _cargarBytesPrenda(_prendaSeleccionada!);
+          }
+        });
+      } else if (_prendaSeleccionada == null && catalogo.prendas.isNotEmpty) {
+        setState(() {
+          _prendaSeleccionada = catalogo.prendas.first;
+        });
+        _cargarBytesPrenda(_prendaSeleccionada!);
+      }
+    });
+
     if (_prendaSeleccionada != null) {
       _cargarBytesPrenda(_prendaSeleccionada!);
     }
@@ -105,9 +124,9 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   Future<void> _tomarFotoCamara() async {
     final XFile? photo = await _picker.pickImage(
       source: ImageSource.camera,
-      maxWidth: 1024,
+      maxWidth: 768,
       maxHeight: 1024,
-      imageQuality: 85,
+      imageQuality: 75,
     );
     if (photo != null) {
       final bytes = await photo.readAsBytes();
@@ -121,9 +140,9 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   Future<void> _seleccionarFotoGaleria() async {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 1024,
+      maxWidth: 768,
       maxHeight: 1024,
-      imageQuality: 85,
+      imageQuality: 75,
     );
     if (image != null) {
       final bytes = await image.readAsBytes();
