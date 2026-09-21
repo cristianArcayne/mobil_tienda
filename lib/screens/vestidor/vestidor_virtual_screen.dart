@@ -20,6 +20,9 @@ class VestidorVirtualScreen extends StatefulWidget {
 
 class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   final ImagePicker _picker = ImagePicker();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   Uint8List? _userPhotoBytes;
   String _userPhotoMime = 'image/jpeg';
 
@@ -29,6 +32,30 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   bool _cargandoPrenda = false;
 
   static final List<PrendaModel> _demoPrendas = [
+    PrendaModel(
+      id: 21,
+      nombre: 'Polera CAT Original Gris',
+      descripcion: 'Polera de algodón gris Caterpillar edición especial',
+      precio: 120.0,
+      categoriaNombre: 'Poleras',
+      imagenPrincipal: '/static/uploads/polera_cat_gris.png',
+      imagenes: ['/static/uploads/polera_cat_gris.png'],
+      stockTotalDisponible: 15,
+      estadoGlobalStock: 'DISPONIBLE',
+      variantes: [],
+    ),
+    PrendaModel(
+      id: 22,
+      nombre: 'Chamarra Térmica RACCO Negra',
+      descripcion: 'Chamarra térmica negra acolchada RACCO',
+      precio: 280.0,
+      categoriaNombre: 'Chamarras',
+      imagenPrincipal: '/static/uploads/chamarra_racco_negra.png',
+      imagenes: ['/static/uploads/chamarra_racco_negra.png'],
+      stockTotalDisponible: 12,
+      estadoGlobalStock: 'DISPONIBLE',
+      variantes: [],
+    ),
     PrendaModel(
       id: -1,
       nombre: 'Polera Blanca Algodón',
@@ -65,7 +92,6 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
       estadoGlobalStock: 'DISPONIBLE',
       variantes: [],
     ),
-
     PrendaModel(
       id: -4,
       nombre: 'Pantalón Jean Slim',
@@ -99,7 +125,24 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
         list.add(p);
       }
     }
+
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.trim().toLowerCase();
+      list = list.where((p) {
+        final nom = p.nombre.toLowerCase();
+        final cat = (p.categoriaNombre ?? '').toLowerCase();
+        final desc = (p.descripcion ?? '').toLowerCase();
+        return nom.contains(q) || cat.contains(q) || desc.contains(q);
+      }).toList();
+    }
+
     return list;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -448,35 +491,132 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
             children: [
               const Text('2. Seleccionar Prenda de Ropa', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
               if (_cargandoPrenda)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                const Row(
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    SizedBox(width: 6),
+                    Text('Cargando...', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                  ],
                 ),
             ],
           ),
           const SizedBox(height: 10),
-          SizedBox(
-            height: 110,
-            child: Builder(
-              builder: (context) {
-                final prendasDisponibles = _getPrendas(catalogo);
-                return ListView.separated(
-                  scrollDirection: Axis.horizontal,
+
+          // Buscador de prendas
+          TextField(
+            controller: _searchController,
+            onChanged: (val) {
+              setState(() {
+                _searchQuery = val;
+              });
+            },
+            decoration: InputDecoration(
+              hintText: 'Buscar por nombre o categoría (ej: CAT, Polera, RACCO)...',
+              hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B), size: 20),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18, color: Color(0xFF64748B)),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: const Color(0xFFF1F5F9),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Prenda actualmente elegida (Resumen destacado)
+          if (_prendaSeleccionada != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Color(0xFF16A34A), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Elegida: ${_prendaSeleccionada!.nombre}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 10),
+
+          // Lista vertical de prendas
+          Builder(
+            builder: (context) {
+              final prendasDisponibles = _getPrendas(catalogo);
+
+              if (prendasDisponibles.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Icon(Icons.search_off, color: Color(0xFF94A3B8), size: 36),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No se encontraron prendas para "$_searchQuery"',
+                          style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return Container(
+                constraints: const BoxConstraints(maxHeight: 340),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.all(8),
                   itemCount: prendasDisponibles.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (ctx, i) {
                     final p = prendasDisponibles[i];
                     final isSel = _prendaSeleccionada?.id == p.id;
 
                     return InkWell(
+                      borderRadius: BorderRadius.circular(12),
                       onTap: () {
                         setState(() => _prendaSeleccionada = p);
                         _cargarBytesPrenda(p);
                       },
                       child: Container(
-                        width: 90,
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: isSel ? const Color(0xFFEEF2FF) : Colors.white,
                           borderRadius: BorderRadius.circular(12),
@@ -484,26 +624,102 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                             color: isSel ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0),
                             width: isSel ? 2 : 1,
                           ),
+                          boxShadow: isSel
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF4F46E5).withOpacity(0.08),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ]
+                              : [],
                         ),
-                        child: Column(
+                        child: Row(
                           children: [
-                            Expanded(
-                              child: p.imagenPrincipal != null
-                                  ? Image.network(
-                                      Environment.formatImageUrl(p.imagenPrincipal!),
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => const Icon(Icons.checkroom),
-                                    )
-                                  : const Icon(Icons.checkroom),
-                            ),
-                            Text(
-                              p.nombre,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                            // Miniatura de prenda (70x70)
+                            Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(10),
                               ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: p.imagenPrincipal != null && p.imagenPrincipal!.isNotEmpty
+                                    ? Image.network(
+                                        Environment.formatImageUrl(p.imagenPrincipal!),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const Icon(Icons.checkroom, color: Color(0xFF94A3B8), size: 30),
+                                      )
+                                    : const Icon(Icons.checkroom, color: Color(0xFF94A3B8), size: 30),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Info de la prenda
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    p.nombre,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
+                                      color: isSel ? const Color(0xFF1E1B4B) : const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isSel ? const Color(0xFFC7D2FE) : const Color(0xFFE2E8F0),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          p.categoriaNombre ?? 'Prenda',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: isSel ? const Color(0xFF3730A3) : const Color(0xFF475569),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Bs ${p.precio.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF16A34A),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (p.descripcion != null && p.descripcion!.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      p.descripcion!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // Icono de selección (Radio / Check)
+                            Icon(
+                              isSel ? Icons.check_circle : Icons.radio_button_unchecked,
+                              color: isSel ? const Color(0xFF4F46E5) : const Color(0xFF94A3B8),
+                              size: 24,
                             ),
                           ],
                         ),
@@ -513,7 +729,6 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                 );
               },
             ),
-          ),
           const SizedBox(height: 32),
 
           // Botón Probar con IA
