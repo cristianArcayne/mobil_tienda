@@ -59,12 +59,13 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
       descripcion: 'Chaqueta vaquera denim clásica',
       precio: 220.0,
       categoriaNombre: 'Superior',
-      imagenPrincipal: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&auto=format&fit=crop&q=80',
-      imagenes: ['https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&auto=format&fit=crop&q=80'],
+      imagenPrincipal: 'https://images.unsplash.com/photo-1543076447-215ad9ba6923?w=800&auto=format&fit=crop&q=80',
+      imagenes: ['https://images.unsplash.com/photo-1543076447-215ad9ba6923?w=800&auto=format&fit=crop&q=80'],
       stockTotalDisponible: 10,
       estadoGlobalStock: 'DISPONIBLE',
       variantes: [],
     ),
+
     PrendaModel(
       id: -4,
       nombre: 'Pantalón Jean Slim',
