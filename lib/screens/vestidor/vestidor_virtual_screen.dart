@@ -468,49 +468,50 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                     final p = prendasDisponibles[i];
                     final isSel = _prendaSeleccionada?.id == p.id;
 
-                return InkWell(
-                  onTap: () {
-                    setState(() => _prendaSeleccionada = p);
-                    _cargarBytesPrenda(p);
-                  },
-                  child: Container(
-                    width: 90,
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: isSel ? const Color(0xFFEEF2FF) : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSel ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0),
-                        width: isSel ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: p.imagenPrincipal != null
-                              ? Image.network(
-                                  Environment.formatImageUrl(p.imagenPrincipal!),
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => const Icon(Icons.checkroom),
-                                )
-                              : const Icon(Icons.checkroom),
-                        ),
-                        Text(
-                          p.nombre,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                    return InkWell(
+                      onTap: () {
+                        setState(() => _prendaSeleccionada = p);
+                        _cargarBytesPrenda(p);
+                      },
+                      child: Container(
+                        width: 90,
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isSel ? const Color(0xFFEEF2FF) : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSel ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0),
+                            width: isSel ? 2 : 1,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  );
-                },
-              );
-            },
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: p.imagenPrincipal != null
+                                  ? Image.network(
+                                      Environment.formatImageUrl(p.imagenPrincipal!),
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) => const Icon(Icons.checkroom),
+                                    )
+                                  : const Icon(Icons.checkroom),
+                            ),
+                            Text(
+                              p.nombre,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
           const SizedBox(height: 32),
 
