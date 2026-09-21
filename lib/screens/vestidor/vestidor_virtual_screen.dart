@@ -746,6 +746,68 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
     );
   }
 
+  void _visualizarImagenAmpliada(Uint8List bytes) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.black87,
+        insetPadding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBar(
+              title: const Text('Visualizar Resultado IA', style: TextStyle(color: Colors.white, fontSize: 16)),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              automaticallyImplyLeading: false,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            Flexible(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.memory(bytes, fit: BoxFit.contain),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _guardarFotoResultado() {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '¡Imagen guardada exitosamente en el historial del vestidor!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF16A34A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   Widget _buildResultadoView(VestidorService vestidor) {
     final bytes = base64Decode(vestidor.resultadoImageBase64!);
 
@@ -788,16 +850,36 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                   children: [
                     const Text('Después (IA)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF4F46E5))),
                     const SizedBox(height: 6),
-                    Container(
-                      height: 260,
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF4F46E5), width: 2),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.memory(bytes, fit: BoxFit.cover),
+                    InkWell(
+                      onTap: () => _visualizarImagenAmpliada(bytes),
+                      child: Stack(
+                        children: [
+                          Container(
+                            height: 260,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFF4F46E5), width: 2),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.memory(bytes, fit: BoxFit.cover),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.7),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.fullscreen, color: Colors.white, size: 20),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -805,7 +887,36 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+
+          // Acciones: Guardar y Visualizar Ampliada
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF16A34A),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  icon: const Icon(Icons.save_alt),
+                  label: const Text('Guardar Imagen', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onPressed: _guardarFotoResultado,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  icon: const Icon(Icons.zoom_in),
+                  label: const Text('Visualizar XL', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onPressed: () => _visualizarImagenAmpliada(bytes),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
 
           OutlinedButton.icon(
             icon: const Icon(Icons.replay),
