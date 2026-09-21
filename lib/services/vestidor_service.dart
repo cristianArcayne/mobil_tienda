@@ -149,7 +149,7 @@ class VestidorService extends ChangeNotifier {
     }
 
     _isLoading = true;
-    _loadingStatus = 'Preparando imágenes para Gemini IA...';
+    _loadingStatus = 'Preparando imágenes para IA...';
     _errorMessage = null;
     _resultadoImageBase64 = null;
     notifyListeners();
@@ -158,7 +158,7 @@ class VestidorService extends ChangeNotifier {
       final String personaB64 = base64Encode(personaBytes);
       final String prendaB64 = base64Encode(prendaBytes);
 
-      _loadingStatus = 'Gemini 2.5 Flash Image procesando...';
+      _loadingStatus = 'IA procesando imagen...';
       notifyListeners();
 
       const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/${Environment.geminiModel}:generateContent?key=$apiKey';
