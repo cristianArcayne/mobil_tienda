@@ -131,7 +131,7 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
       list = list.where((p) {
         final nom = p.nombre.toLowerCase();
         final cat = (p.categoriaNombre ?? '').toLowerCase();
-        final desc = (p.descripcion ?? '').toLowerCase();
+        final desc = p.descripcion.toLowerCase();
         return nom.contains(q) || cat.contains(q) || desc.contains(q);
       }).toList();
     }
@@ -701,10 +701,10 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                                       ),
                                     ],
                                   ),
-                                  if (p.descripcion != null && p.descripcion!.isNotEmpty) ...[
+                                  if (p.descripcion.isNotEmpty) ...[
                                     const SizedBox(height: 4),
                                     Text(
-                                      p.descripcion!,
+                                      p.descripcion,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
@@ -726,9 +726,10 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                       ),
                     );
                   },
-                );
-              },
-            ),
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 32),
 
           // Botón Probar con IA
