@@ -4,6 +4,7 @@ import '../../models/prenda_model.dart';
 import '../../services/carrito_service.dart';
 import '../../services/catalogo_service.dart';
 import '../../services/favoritos_service.dart';
+import '../../services/resenas_service.dart';
 import '../../widgets/rating_stars.dart';
 import '../../widgets/stock_badge.dart';
 import '../resenas/resenas_list_screen.dart';
@@ -49,6 +50,93 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
         }
       });
     }
+  }
+
+  void _abrirDialogoAgregarResena(PrendaModel prenda) {
+    int calificacion = 5;
+    final comentarioCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.rate_review, color: Color(0xFF4F46E5)),
+              SizedBox(width: 8),
+              Text('Calificar y Opinar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(prenda.nombre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
+                const SizedBox(height: 12),
+                const Text('Tu Puntuación en Estrellas:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    final starVal = index + 1;
+                    return IconButton(
+                      icon: Icon(
+                        starVal <= calificacion ? Icons.star : Icons.star_border,
+                        color: const Color(0xFFF59E0B),
+                        size: 32,
+                      ),
+                      onPressed: () => setDialogState(() => calificacion = starVal),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 12),
+                const Text('Tu Opinión o Comentario:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: comentarioCtrl,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Escribe tu opinión sobre la tela, el talle o la comodidad...',
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4F46E5)),
+              icon: const Icon(Icons.send, size: 16),
+              label: const Text('Publicar Reseña'),
+              onPressed: () async {
+                final service = Provider.of<ResenasService>(context, listen: false);
+                final ok = await service.crearResena(
+                  ropaId: prenda.id,
+                  calificacion: calificacion,
+                  comentario: comentarioCtrl.text.trim(),
+                );
+                if (ok && ctx.mounted) {
+                  Navigator.pop(ctx);
+                  _cargarDetalle();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('¡Gracias por tu reseña! Ha sido publicada exitosamente.'),
+                      backgroundColor: Color(0xFF16A34A),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _agregarAlCarrito() {
@@ -335,6 +423,74 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                   Text(
                     p.descripcion.isNotEmpty ? p.descripcion : 'Prenda confeccionada con telas de primera calidad para garantizar confort y estilo duradero.',
                     style: const TextStyle(fontSize: 14, color: Color(0xFF475569), height: 1.5),
+                  ),
+                  const SizedBox(height: 28),
+
+                  // Sección CU19: Reseñas y Calificaciones de Clientes
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Reseñas y Calificaciones ⭐',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            RatingStars(rating: p.calificacionPromedio ?? 5.0, totalResenas: p.totalResenas, size: 20),
+                            const Spacer(),
+                            Text(
+                              '${p.calificacionPromedio ?? 5.0} / 5.0',
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFFD97706)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4F46E5),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                                icon: const Icon(Icons.rate_review, size: 18),
+                                label: const Text('Calificar y Opinar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                onPressed: () => _abrirDialogoAgregarResena(p),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                                icon: const Icon(Icons.comment_outlined, size: 18),
+                                label: const Text('Ver Opiniones', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => ResenasListScreen(ropaId: p.id, prendaNombre: p.nombre)),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 80),
                 ],
