@@ -163,13 +163,10 @@ class VestidorService extends ChangeNotifier {
       notifyListeners();
       return b64Fallback;
     }
-
-      notifyListeners();
-      return null;
-    }
   }
 
   // Fallback con Google Gemini
+
   Future<String?> _probarConGemini({
     required Uint8List personaBytes,
     required String personaMimeType,
