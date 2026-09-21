@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/prenda_model.dart';
+import '../../services/auth_service.dart';
 import '../../services/carrito_service.dart';
 import '../../services/catalogo_service.dart';
 import '../../services/favoritos_service.dart';
@@ -114,11 +115,17 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
               icon: const Icon(Icons.send, size: 16),
               label: const Text('Publicar Reseña'),
               onPressed: () async {
+                final auth = Provider.of<AuthService>(context, listen: false);
+                final clienteNombre = auth.currentUser?.nombreCompleto ?? auth.currentUser?.username ?? 'Cliente App';
+                final clienteCi = auth.currentUser?.username ?? '1001';
+
                 final service = Provider.of<ResenasService>(context, listen: false);
                 final ok = await service.crearResena(
                   ropaId: prenda.id,
                   calificacion: calificacion,
                   comentario: comentarioCtrl.text.trim(),
+                  clienteCi: clienteCi,
+                  clienteNombre: clienteNombre,
                 );
                 if (ok && ctx.mounted) {
                   Navigator.pop(ctx);

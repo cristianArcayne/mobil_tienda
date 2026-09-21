@@ -42,15 +42,28 @@ class ResenasService extends ChangeNotifier {
     required int ropaId,
     required int calificacion,
     required String comentario,
+    String? clienteCi,
+    String? clienteNombre,
   }) async {
     try {
+      final payload = <String, dynamic>{
+        'ropa_id': ropaId,
+        'producto_id': ropaId,
+        'calificacion': calificacion,
+        'puntuacion_estrellas': calificacion,
+        'comentario': comentario,
+      };
+
+      if (clienteCi != null && clienteCi.isNotEmpty) {
+        payload['cliente_ci'] = clienteCi;
+      }
+      if (clienteNombre != null && clienteNombre.isNotEmpty) {
+        payload['cliente_nombre'] = clienteNombre;
+      }
+
       final response = await ApiClient.post(
         Environment.resenas,
-        {
-          'ropa_id': ropaId,
-          'calificacion': calificacion,
-          'comentario': comentario,
-        },
+        payload,
       );
 
       if (response != null) {

@@ -78,11 +78,17 @@ class _ResenasListScreenState extends State<ResenasListScreen> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
             ElevatedButton(
               onPressed: () async {
+                final auth = Provider.of<AuthService>(context, listen: false);
+                final clienteNombre = auth.currentUser?.nombreCompleto ?? auth.currentUser?.username ?? 'Cliente App';
+                final clienteCi = auth.currentUser?.username ?? '1001';
+
                 final service = Provider.of<ResenasService>(context, listen: false);
                 final ok = await service.crearResena(
                   ropaId: widget.ropaId,
                   calificacion: calificacion,
                   comentario: comentarioCtrl.text.trim(),
+                  clienteCi: clienteCi,
+                  clienteNombre: clienteNombre,
                 );
                 if (ok && ctx.mounted) {
                   Navigator.pop(ctx);
