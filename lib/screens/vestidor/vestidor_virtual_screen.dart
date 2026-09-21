@@ -28,32 +28,91 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   String _prendaMime = 'image/png';
   bool _cargandoPrenda = false;
 
+  static final List<PrendaModel> _demoPrendas = [
+    PrendaModel(
+      id: -1,
+      nombre: 'Polera Blanca Algodón',
+      descripcion: 'Polera básica de algodón ideal para vestir con IA',
+      precio: 89.0,
+      categoriaNombre: 'Superior',
+      imagenPrincipal: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80',
+      imagenes: ['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80'],
+      stockTotalDisponible: 10,
+      estadoGlobalStock: 'DISPONIBLE',
+      variantes: [],
+    ),
+    PrendaModel(
+      id: -2,
+      nombre: 'Sudadera Roja Casual',
+      descripcion: 'Sudadera roja casual de alta definición',
+      precio: 159.0,
+      categoriaNombre: 'Superior',
+      imagenPrincipal: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80',
+      imagenes: ['https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80'],
+      stockTotalDisponible: 10,
+      estadoGlobalStock: 'DISPONIBLE',
+      variantes: [],
+    ),
+    PrendaModel(
+      id: -3,
+      nombre: 'Chaqueta Denim',
+      descripcion: 'Chaqueta vaquera denim clásica',
+      precio: 220.0,
+      categoriaNombre: 'Superior',
+      imagenPrincipal: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&auto=format&fit=crop&q=80',
+      imagenes: ['https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800&auto=format&fit=crop&q=80'],
+      stockTotalDisponible: 10,
+      estadoGlobalStock: 'DISPONIBLE',
+      variantes: [],
+    ),
+    PrendaModel(
+      id: -4,
+      nombre: 'Pantalón Jean Slim',
+      descripcion: 'Pantalón jean azul para probar prenda inferior',
+      precio: 180.0,
+      categoriaNombre: 'Inferior',
+      imagenPrincipal: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80',
+      imagenes: ['https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80'],
+      stockTotalDisponible: 10,
+      estadoGlobalStock: 'DISPONIBLE',
+      variantes: [],
+    ),
+    PrendaModel(
+      id: -5,
+      nombre: 'Vestido Estampado',
+      descripcion: 'Vestido de verano para prueba de vestidos',
+      precio: 210.0,
+      categoriaNombre: 'Vestidos',
+      imagenPrincipal: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=800&auto=format&fit=crop&q=80',
+      imagenes: ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=800&auto=format&fit=crop&q=80'],
+      stockTotalDisponible: 10,
+      estadoGlobalStock: 'DISPONIBLE',
+      variantes: [],
+    ),
+  ];
+
+  List<PrendaModel> _getPrendas(CatalogoService catalogo) {
+    List<PrendaModel> list = [..._demoPrendas];
+    for (var p in catalogo.prendas) {
+      if (!list.any((element) => element.id == p.id)) {
+        list.add(p);
+      }
+    }
+    return list;
+  }
+
   @override
   void initState() {
     super.initState();
-    _prendaSeleccionada = widget.prendaInicial;
+    _prendaSeleccionada = widget.prendaInicial ?? _demoPrendas.first;
+    _cargarBytesPrenda(_prendaSeleccionada!);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final catalogo = Provider.of<CatalogoService>(context, listen: false);
       if (catalogo.prendas.isEmpty) {
-        catalogo.cargarCatalogo().then((_) {
-          if (_prendaSeleccionada == null && catalogo.prendas.isNotEmpty) {
-            setState(() {
-              _prendaSeleccionada = catalogo.prendas.first;
-            });
-            _cargarBytesPrenda(_prendaSeleccionada!);
-          }
-        });
-      } else if (_prendaSeleccionada == null && catalogo.prendas.isNotEmpty) {
-        setState(() {
-          _prendaSeleccionada = catalogo.prendas.first;
-        });
-        _cargarBytesPrenda(_prendaSeleccionada!);
+        catalogo.cargarCatalogo();
       }
     });
-
-    if (_prendaSeleccionada != null) {
-      _cargarBytesPrenda(_prendaSeleccionada!);
-    }
   }
 
   Future<void> _cargarBytesPrenda(PrendaModel prenda) async {
@@ -398,13 +457,16 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
           const SizedBox(height: 10),
           SizedBox(
             height: 110,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: catalogo.prendas.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (ctx, i) {
-                final p = catalogo.prendas[i];
-                final isSel = _prendaSeleccionada?.id == p.id;
+            child: Builder(
+              builder: (context) {
+                final prendasDisponibles = _getPrendas(catalogo);
+                return ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: prendasDisponibles.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  itemBuilder: (ctx, i) {
+                    final p = prendasDisponibles[i];
+                    final isSel = _prendaSeleccionada?.id == p.id;
 
                 return InkWell(
                   onTap: () {
@@ -445,9 +507,10 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                       ],
                     ),
                   ),
-                );
-              },
-            ),
+                  );
+                },
+              );
+            },
           ),
           const SizedBox(height: 32),
 
