@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import '../../config/environment.dart';
 import '../../models/prenda_model.dart';
 import '../../services/vestidor_service.dart';
 import '../../services/catalogo_service.dart';
@@ -25,6 +26,7 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   PrendaModel? _prendaSeleccionada;
   Uint8List? _prendaBytes;
   String _prendaMime = 'image/png';
+  bool _cargandoPrenda = false;
 
   @override
   void initState() {
@@ -36,26 +38,37 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   }
 
   Future<void> _cargarBytesPrenda(PrendaModel prenda) async {
-    final url = prenda.imagenPrincipal;
-    if (url != null && url.startsWith('http')) {
+    setState(() => _cargandoPrenda = true);
+    String? url = prenda.imagenPrincipal;
+    if ((url == null || url.isEmpty) && prenda.imagenes.isNotEmpty) {
+      url = prenda.imagenes.first;
+    }
+
+    if (url != null && url.isNotEmpty) {
+      final formattedUrl = Environment.formatImageUrl(url);
       try {
-        final res = await http.get(Uri.parse(url));
+        final res = await http.get(Uri.parse(formattedUrl));
         if (res.statusCode == 200) {
           setState(() {
             _prendaBytes = res.bodyBytes;
-            _prendaMime = 'image/png';
+            _prendaMime = formattedUrl.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+            _cargandoPrenda = false;
           });
+          return;
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Error descargando imagen de prenda: $e');
+      }
     }
+    setState(() => _cargandoPrenda = false);
   }
 
   Future<void> _tomarFotoCamara() async {
     final XFile? photo = await _picker.pickImage(
       source: ImageSource.camera,
-      maxWidth: 1080,
-      maxHeight: 1080,
-      imageQuality: 90,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
     );
     if (photo != null) {
       final bytes = await photo.readAsBytes();
@@ -69,8 +82,9 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   Future<void> _seleccionarFotoGaleria() async {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 1080,
-      maxHeight: 1080,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
     );
     if (image != null) {
       final bytes = await image.readAsBytes();
@@ -81,37 +95,54 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
     }
   }
 
-  void _ejecutarPruebaIA() {
+  Future<void> _ejecutarPruebaIA() async {
     if (_userPhotoBytes == null) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor tómate una foto o sube una imagen tuya.'),
           behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
+          duration: Duration(seconds: 3),
         ),
       );
       return;
     }
 
     if (_prendaBytes == null) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selecciona una prenda para probar.'),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
+      if (_prendaSeleccionada != null) {
+        await _cargarBytesPrenda(_prendaSeleccionada!);
+      }
+      if (_prendaBytes == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor selecciona una prenda con imagen disponible.'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
     }
 
+    String category = 'upper_body';
+    final nom = (_prendaSeleccionada?.nombre ?? '').toLowerCase();
+    final catNom = (_prendaSeleccionada?.categoriaNombre ?? '').toLowerCase();
+    if (nom.contains('jean') || nom.contains('pantalon') || nom.contains('falda') || nom.contains('short') || catNom.contains('inferior')) {
+      category = 'lower_body';
+    } else if (nom.contains('vestido') || catNom.contains('vestido')) {
+      category = 'dresses';
+    }
+
+    if (!mounted) return;
     final vestidor = Provider.of<VestidorService>(context, listen: false);
     vestidor.probarPrendaGemini(
       personaBytes: _userPhotoBytes!,
       personaMimeType: _userPhotoMime,
       prendaBytes: _prendaBytes!,
       prendaMimeType: _prendaMime,
+      category: category,
     );
   }
 
@@ -138,13 +169,13 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      'Gemini AI está adaptando la prenda...',
+                      'Generando Prueba Virtual...',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      vestidor.loadingStatus ?? 'Ajustando prenda fotorrealista a tu cuerpo...',
+                      vestidor.loadingStatus ?? 'Adaptando prenda con Segmind IDM-VTON...',
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
                     ),
@@ -154,16 +185,53 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
             )
           : vestidor.resultadoImageBase64 != null
               ? _buildResultadoView(vestidor)
-              : _buildSetupView(catalogo),
+              : _buildSetupView(catalogo, vestidor),
     );
   }
 
-  Widget _buildSetupView(CatalogoService catalogo) {
+  Widget _buildSetupView(CatalogoService catalogo, VestidorService vestidor) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Banner de error si ocurrió alguno
+          if (vestidor.errorMessage != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFCA5A5)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 24),
+                      SizedBox(width: 8),
+                      Text(
+                        'Aviso en la Generación',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF991B1B), fontSize: 14),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    vestidor.errorMessage!,
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF7F1D1D)),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '💡 Consejo: Asegúrate de que la foto muestre a una persona de cuerpo entero o torso claro, con buena iluminación.',
+                    style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Color(0xFF991B1B)),
+                  ),
+                ],
+              ),
+            ),
+
           // Banner explicativo
           Container(
             padding: const EdgeInsets.all(16),
@@ -182,10 +250,10 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Vestidor Inteligente Gemini 2.5',
+                      Text('Vestidor Fotorrealista Segmind IA',
                           style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1E1B4B))),
                       SizedBox(height: 2),
-                      Text('Tómate una foto y visualiza cómo luce la prenda en tu cuerpo con IA generativa.',
+                      Text('Tómate una foto y visualiza la prenda adaptada a tu cuerpo con precisión fotorrealista.',
                           style: TextStyle(fontSize: 12, color: Color(0xFF4338CA))),
                     ],
                   ),
@@ -255,7 +323,18 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
           const SizedBox(height: 24),
 
           // Paso 2: Prenda seleccionada
-          const Text('2. Seleccionar Prenda de Ropa', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('2. Seleccionar Prenda de Ropa', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              if (_cargandoPrenda)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
           const SizedBox(height: 10),
           SizedBox(
             height: 110,
@@ -287,7 +366,11 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                       children: [
                         Expanded(
                           child: p.imagenPrincipal != null
-                              ? Image.network(p.imagenPrincipal!, fit: BoxFit.contain)
+                              ? Image.network(
+                                  Environment.formatImageUrl(p.imagenPrincipal!),
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.checkroom),
+                                )
                               : const Icon(Icons.checkroom),
                         ),
                         Text(
@@ -315,7 +398,7 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
               backgroundColor: const Color(0xFF4F46E5),
             ),
             icon: const Icon(Icons.auto_fix_high),
-            label: const Text('Probar Prenda con Gemini IA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            label: const Text('Probar Prenda en Vestidor IA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             onPressed: _ejecutarPruebaIA,
           ),
         ],
@@ -333,7 +416,7 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
         children: [
           const Text('✨ Resultado del Vestidor Virtual', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
           const SizedBox(height: 4),
-          const Text('Prenda integrada fotorrealistamente con Gemini 2.5 Flash Image.',
+          const Text('Prenda adaptada fotorrealistamente con Segmind IDM-VTON.',
               style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
           const SizedBox(height: 16),
 
@@ -394,4 +477,3 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
     );
   }
 }
-

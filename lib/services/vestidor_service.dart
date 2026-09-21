@@ -82,7 +82,7 @@ class VestidorService extends ChangeNotifier {
       final personaDataUrl = 'data:$personaMimeType;base64,${base64Encode(personaBytes)}';
       final prendaDataUrl = 'data:$prendaMimeType;base64,${base64Encode(prendaBytes)}';
 
-      _loadingStatus = 'Segmind IDM-VTON está vistiendo la prenda en tu cuerpo...';
+      _loadingStatus = 'Segmind IDM-VTON está vistiendo la prenda en tu cuerpo (puede tardar unos 20-30s)...';
       notifyListeners();
 
       final requestBody = {
@@ -98,11 +98,11 @@ class VestidorService extends ChangeNotifier {
       final response = await http.post(
         Uri.parse('https://api.segmind.com/v1/idm-vton'),
         headers: {
-          'x-api-key': Environment.segmindApiKey,
+          'x-api-key': Environment.segmindApiKey.trim(),
           'Content-Type': 'application/json',
         },
         body: jsonEncode(requestBody),
-      ).timeout(const Duration(seconds: 50));
+      ).timeout(const Duration(seconds: 90));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // Segmind devuelve directamente los bytes de la imagen JPEG
@@ -110,6 +110,7 @@ class VestidorService extends ChangeNotifier {
         _resultadoImageBase64 = b64Result;
         _isLoading = false;
         _loadingStatus = null;
+        _errorMessage = null;
         notifyListeners();
         return b64Result;
       } else {
@@ -197,7 +198,7 @@ class VestidorService extends ChangeNotifier {
         Uri.parse(endpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
-      ).timeout(const Duration(seconds: 40));
+      ).timeout(const Duration(seconds: 45));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -214,6 +215,7 @@ class VestidorService extends ChangeNotifier {
           _resultadoImageBase64 = b64Result;
           _isLoading = false;
           _loadingStatus = null;
+          _errorMessage = null;
           notifyListeners();
           return b64Result;
         } else {
