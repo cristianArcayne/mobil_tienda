@@ -19,8 +19,8 @@ class Environment {
     return 'https://tienda-backend-kvfk.onrender.com';
   }
   
-  // Clave de API de Segmind (IDM-VTON) y Google Gemini para pruebas virtuales
-  static const String segmindApiKey = 'SG_6197dc2bb848ae07';
+  // Clave de API de Google AI Studio / Gemini para pruebas virtuales (BFF)
+  static const String segmindApiKey = '';
   static const String geminiApiKey = '';
   static const String geminiModel = 'gemini-2.5-flash-image';
 
