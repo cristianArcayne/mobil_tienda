@@ -16,7 +16,7 @@ class Environment {
     }
 
     // Por defecto se conecta al backend en la nube en Render
-    return 'https://tienda-backend-kvfk.onrender.com';
+    return 'http://127.0.0.1:8000';
   }
   
   // Clave de API de Google AI Studio / Gemini para pruebas virtuales (BFF)

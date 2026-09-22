@@ -251,9 +251,15 @@ class VestidorService extends ChangeNotifier {
             'parts': [
               {
                 'text': customInstructions ??
-                    'Virtual try-on task: Dress the person in the first image with the garment shown in the second image. '
-                    'Fit the garment realistically to their body pose and contours, preserving person facial features, identity, '
-                    'hands, hair and background intact. Provide a photorealistic high resolution result image.'
+                    'You are an expert virtual try-on fashion AI system.\n'
+                    'Image 1 is the customer/person. Image 2 is the clothing item.\n'
+                    'Dress the person in Image 1 with the clothing item shown in Image 2.\n\n'
+                    'Strict Requirements:\n'
+                    '1. Perfectly preserve the person\'s exact face, identity, hair, skin tone, body shape, and pose.\n'
+                    '2. Replace only the corresponding clothing area with the exact texture, pattern, logos, colors, and style of the garment in Image 2.\n'
+                    '3. Ensure natural fabric folds, realistic lighting, realistic shadows, and correct seam fitting around the body.\n'
+                    '4. Keep the background clean and natural.\n'
+                    '5. Output strictly a clean photorealistic portrait image of the person wearing the garment.'
               },
               {
                 'inlineData': {
