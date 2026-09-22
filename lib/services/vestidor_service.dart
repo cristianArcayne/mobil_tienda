@@ -36,7 +36,7 @@ class VestidorService extends ChangeNotifier {
     }
   }
 
-  // Ejecutar prueba virtual (prioriza Segmind IDM-VTON, o recurre a Gemini)
+  // Ejecutar prueba virtual (llama al backend FastAPI /try-on-ia, Segmind IDM-VTON o Gemini)
   Future<String?> probarPrendaGemini({
     required Uint8List personaBytes,
     required String personaMimeType,
@@ -44,7 +44,57 @@ class VestidorService extends ChangeNotifier {
     required String prendaMimeType,
     String? customInstructions,
     String category = 'upper_body',
+    int? ropaId,
   }) async {
+    _isLoading = true;
+    _loadingStatus = 'Generando prueba virtual con IA...';
+    _errorMessage = null;
+    _resultadoImageBase64 = null;
+    notifyListeners();
+
+    // 1. Intentar primero con el backend FastAPI (/api/v1/ar/try-on-ia) que incluye fallback garantizado
+    if (ropaId != null) {
+      try {
+        _loadingStatus = 'El servidor está procesando la prueba virtual...';
+        notifyListeners();
+
+        final uri = Uri.parse('${Environment.vestidorAr}/try-on-ia');
+        final request = http.MultipartRequest('POST', uri);
+        request.fields['ropa_id'] = ropaId.toString();
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'foto_usuario',
+            personaBytes,
+            filename: 'foto_usuario.jpg',
+          ),
+        );
+
+        final streamedResponse = await request.send().timeout(const Duration(seconds: 90));
+        final response = await http.Response.fromStream(streamedResponse);
+
+        debugPrint('Vestidor Backend /try-on-ia status: ${response.statusCode}');
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          if (data['success'] == true && data['imagen_resultado'] != null) {
+            String imgRes = data['imagen_resultado'].toString();
+            if (imgRes.contains(',')) {
+              imgRes = imgRes.split(',').last;
+            }
+            _resultadoImageBase64 = imgRes;
+            _isLoading = false;
+            _loadingStatus = null;
+            _errorMessage = null;
+            notifyListeners();
+            return imgRes;
+          }
+        }
+      } catch (e) {
+        debugPrint('Vestidor: Error llamando a backend /try-on-ia: $e');
+      }
+    }
+
+    // 2. Si no hay ropaId o el backend falló, intentar vía Segmind directo
     if (Environment.segmindApiKey.isNotEmpty) {
       return _probarConSegmind(
         personaBytes: personaBytes,

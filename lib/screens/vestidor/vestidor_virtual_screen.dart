@@ -327,6 +327,7 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
       prendaBytes: _prendaBytes!,
       prendaMimeType: _prendaMime,
       category: category,
+      ropaId: _prendaSeleccionada?.id,
     );
   }
 
