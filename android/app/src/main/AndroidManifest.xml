@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.fashionstore.movil">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Permisos para Conexión API y Multimedia -->
     <uses-permission android:name="android.permission.INTERNET" />
