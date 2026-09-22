@@ -47,51 +47,15 @@ class VestidorService extends ChangeNotifier {
     int? ropaId,
   }) async {
     _isLoading = true;
-    _loadingStatus = 'Generando prueba virtual con IA...';
+    _loadingStatus = 'Generando prueba virtual...';
     _errorMessage = null;
     _resultadoImageBase64 = null;
     notifyListeners();
 
-    // 1. Intentar primero con el backend FastAPI (/api/v1/ar/try-on-ia) que incluye fallback garantizado
+    // 1. Intentar primero con el backend FastAPI (/api/v1/ar/try-on-ia) que garantiza la superposición de la prenda
     if (ropaId != null) {
-      try {
-        _loadingStatus = 'El servidor está procesando la prueba virtual...';
-        notifyListeners();
-
-        final uri = Uri.parse('${Environment.vestidorAr}/try-on-ia');
-        final request = http.MultipartRequest('POST', uri);
-        request.fields['ropa_id'] = ropaId.toString();
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'foto_usuario',
-            personaBytes,
-            filename: 'foto_usuario.jpg',
-          ),
-        );
-
-        final streamedResponse = await request.send().timeout(const Duration(seconds: 90));
-        final response = await http.Response.fromStream(streamedResponse);
-
-        debugPrint('Vestidor Backend /try-on-ia status: ${response.statusCode}');
-
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          final data = jsonDecode(utf8.decode(response.bodyBytes));
-          if (data['success'] == true && data['imagen_resultado'] != null) {
-            String imgRes = data['imagen_resultado'].toString();
-            if (imgRes.contains(',')) {
-              imgRes = imgRes.split(',').last;
-            }
-            _resultadoImageBase64 = imgRes;
-            _isLoading = false;
-            _loadingStatus = null;
-            _errorMessage = null;
-            notifyListeners();
-            return imgRes;
-          }
-        }
-      } catch (e) {
-        debugPrint('Vestidor: Error llamando a backend /try-on-ia: $e');
-      }
+      final res = await _probarConBackend(ropaId: ropaId, personaBytes: personaBytes);
+      if (res != null) return res;
     }
 
     // 2. Si no hay ropaId o el backend falló, intentar vía Segmind directo
@@ -102,6 +66,7 @@ class VestidorService extends ChangeNotifier {
         prendaBytes: prendaBytes,
         prendaMimeType: prendaMimeType,
         category: category,
+        ropaId: ropaId,
       );
     }
 
@@ -114,6 +79,51 @@ class VestidorService extends ChangeNotifier {
     );
   }
 
+  Future<String?> _probarConBackend({
+    required int ropaId,
+    required Uint8List personaBytes,
+  }) async {
+    try {
+      _loadingStatus = 'El servidor está adaptando la prenda a tu cuerpo...';
+      notifyListeners();
+
+      final uri = Uri.parse('${Environment.vestidorAr}/try-on-ia');
+      final request = http.MultipartRequest('POST', uri);
+      request.fields['ropa_id'] = ropaId.toString();
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'foto_usuario',
+          personaBytes,
+          filename: 'foto_usuario.jpg',
+        ),
+      );
+
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 90));
+      final response = await http.Response.fromStream(streamedResponse);
+
+      debugPrint('Vestidor Backend /try-on-ia status: ${response.statusCode}');
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['success'] == true && data['imagen_resultado'] != null) {
+          String imgRes = data['imagen_resultado'].toString();
+          if (imgRes.contains(',')) {
+            imgRes = imgRes.split(',').last;
+          }
+          _resultadoImageBase64 = imgRes;
+          _isLoading = false;
+          _loadingStatus = null;
+          _errorMessage = null;
+          notifyListeners();
+          return imgRes;
+        }
+      }
+    } catch (e) {
+      debugPrint('Vestidor: Error llamando a backend /try-on-ia: $e');
+    }
+    return null;
+  }
+
   // Prueba Virtual con Segmind (IDM-VTON) - Fotorrealista
   Future<String?> _probarConSegmind({
     required Uint8List personaBytes,
@@ -121,24 +131,9 @@ class VestidorService extends ChangeNotifier {
     required Uint8List prendaBytes,
     required String prendaMimeType,
     required String category,
+    int? ropaId,
   }) async {
-    _isLoading = true;
-    _loadingStatus = 'Preparando imágenes para Segmind IDM-VTON...';
-    _errorMessage = null;
-    _resultadoImageBase64 = null;
-    notifyListeners();
-
     try {
-      // Validar que los bytes de la prenda son realmente una imagen (no HTML/error)
-      if (prendaBytes.length < 100) {
-        throw Exception('La imagen de la prenda es demasiado pequeña o no se descargó correctamente. Intenta con otra prenda.');
-      }
-      // Verificar que NO sea una respuesta HTML (errores del servidor)
-      final primeros = String.fromCharCodes(prendaBytes.take(50));
-      if (primeros.contains('<!DOCTYPE') || primeros.contains('<html') || primeros.contains('<!doctype')) {
-        throw Exception('La imagen de la prenda no se pudo descargar del servidor. Intenta con otra prenda que tenga imagen válida.');
-      }
-
       // Detectar mime type real de la prenda por magic bytes
       String prendaMimeReal = prendaMimeType;
       if (prendaBytes.length > 4) {
@@ -146,18 +141,12 @@ class VestidorService extends ChangeNotifier {
           prendaMimeReal = 'image/jpeg';
         } else if (prendaBytes[0] == 0x89 && prendaBytes[1] == 0x50) {
           prendaMimeReal = 'image/png';
-        } else if (prendaBytes[0] == 0x47 && prendaBytes[1] == 0x49) {
-          prendaMimeReal = 'image/gif';
-        } else if (prendaBytes[0] == 0x52 && prendaBytes[1] == 0x49) {
-          prendaMimeReal = 'image/webp';
         }
       }
 
-      // Pre-procesar la foto del usuario: convertir a JPEG y normalizar
       final personaDataUrl = 'data:$personaMimeType;base64,${base64Encode(personaBytes)}';
       final prendaDataUrl = 'data:$prendaMimeReal;base64,${base64Encode(prendaBytes)}';
 
-      // Intentar con diferentes configuraciones de crop
       final intentos = [
         {'crop': true, 'desc': 'con crop=true'},
         {'crop': false, 'desc': 'con crop=false'},
@@ -165,9 +154,7 @@ class VestidorService extends ChangeNotifier {
 
       for (int i = 0; i < intentos.length; i++) {
         final intento = intentos[i];
-        _loadingStatus = i == 0
-            ? 'Segmind IDM-VTON está vistiendo la prenda en tu cuerpo (puede tardar 20-30s)...'
-            : 'Reintentando con configuración alternativa...';
+        _loadingStatus = 'Segmind IDM-VTON procesando la prenda...';
         notifyListeners();
 
         final requestBody = {
@@ -188,60 +175,42 @@ class VestidorService extends ChangeNotifier {
               'Content-Type': 'application/json',
             },
             body: jsonEncode(requestBody),
-          ).timeout(const Duration(seconds: 180));
-
-          debugPrint('Vestidor Segmind intento ${i + 1}: status=${response.statusCode}, content-type=${response.headers['content-type']}');
+          ).timeout(const Duration(seconds: 120));
 
           if (response.statusCode >= 200 && response.statusCode < 300) {
-            // Verificar que la respuesta sea realmente una imagen
             final contentType = response.headers['content-type'] ?? '';
-            if (response.bodyBytes.length < 1000 && !contentType.contains('image')) {
-              final body = utf8.decode(response.bodyBytes, allowMalformed: true);
-              debugPrint('Vestidor: Segmind respondió pero no generó imagen: $body');
-              continue;
+            if (response.bodyBytes.length > 1000 || contentType.contains('image')) {
+              final b64Result = base64Encode(response.bodyBytes);
+              _resultadoImageBase64 = b64Result;
+              _isLoading = false;
+              _loadingStatus = null;
+              _errorMessage = null;
+              notifyListeners();
+              return b64Result;
             }
-            final b64Result = base64Encode(response.bodyBytes);
-            _resultadoImageBase64 = b64Result;
-            _isLoading = false;
-            _loadingStatus = null;
-            _errorMessage = null;
-            notifyListeners();
-            return b64Result;
-          } else if (response.statusCode == 400) {
-            // Error 400: intentar con la siguiente configuración
-            debugPrint('Vestidor: Segmind 400 en intento ${i + 1}, probando siguiente config...');
-            continue;
-          } else {
-            debugPrint('Vestidor: Segmind error ${response.statusCode}');
-            continue;
           }
         } catch (e) {
-          debugPrint('Vestidor: Error en intento ${i + 1}: $e');
-          continue;
+          debugPrint('Vestidor Segmind error: $e');
         }
       }
 
-      // Si todos los intentos de Segmind fallaron, usar fallback composite
-      debugPrint('Vestidor: Todos los intentos de Segmind fallaron, usando fallback composite');
-      _loadingStatus = 'Generando vista previa alternativa...';
-      notifyListeners();
+      // Si falla Segmind y hay ropaId, forzar llamada al backend
+      if (ropaId != null) {
+        final resBackend = await _probarConBackend(ropaId: ropaId, personaBytes: personaBytes);
+        if (resBackend != null) return resBackend;
+      }
 
-      final b64Fallback = base64Encode(personaBytes);
-      _resultadoImageBase64 = b64Fallback;
+      _errorMessage = 'No se pudo conectar con la IA de prueba virtual. Asegúrate de tener conexión a internet.';
       _isLoading = false;
       _loadingStatus = null;
-      _errorMessage = null;
       notifyListeners();
-      return b64Fallback;
+      return null;
     } catch (e) {
-      debugPrint('Vestidor: Error general Segmind: $e');
-      final b64Fallback = base64Encode(personaBytes);
-      _resultadoImageBase64 = b64Fallback;
+      _errorMessage = 'Error procesando imagen en vestidor virtual.';
       _isLoading = false;
       _loadingStatus = null;
-      _errorMessage = null;
       notifyListeners();
-      return b64Fallback;
+      return null;
     }
   }
 
