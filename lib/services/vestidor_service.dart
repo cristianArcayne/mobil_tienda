@@ -215,7 +215,6 @@ class VestidorService extends ChangeNotifier {
   }
 
   // Fallback con Google Gemini
-
   Future<String?> _probarConGemini({
     required Uint8List personaBytes,
     required String personaMimeType,
