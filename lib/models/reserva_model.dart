@@ -40,6 +40,7 @@ class ReservaModel {
   final String estado; // PENDIENTE, CONFIRMADA, ENTREGADA, CANCELADA, EXPIRADA
   final String sucursalNombre;
   final String? sucursalDireccion;
+  final String clienteNombre;
   final double montoTotalEstimado;
   final List<DetalleReservaModel> detalles;
 
@@ -50,6 +51,7 @@ class ReservaModel {
     required this.estado,
     required this.sucursalNombre,
     this.sucursalDireccion,
+    required this.clienteNombre,
     required this.montoTotalEstimado,
     required this.detalles,
   });
@@ -65,7 +67,8 @@ class ReservaModel {
       estado: json['estado']?.toString() ?? 'PENDIENTE',
       sucursalNombre: json['sucursal_nombre']?.toString() ?? 'Tienda Central',
       sucursalDireccion: json['sucursal_direccion']?.toString(),
-      montoTotalEstimado: double.tryParse(json['monto_total_estimado']?.toString() ?? '0') ?? 0.0,
+      clienteNombre: json['cliente_nombre']?.toString() ?? json['cliente_id']?.toString() ?? 'Cliente Registrado',
+      montoTotalEstimado: double.tryParse(json['total_estimado']?.toString() ?? json['monto_total_estimado']?.toString() ?? '0') ?? 0.0,
       detalles: rawDetalles.map((d) => DetalleReservaModel.fromJson(d as Map<String, dynamic>)).toList(),
     );
   }

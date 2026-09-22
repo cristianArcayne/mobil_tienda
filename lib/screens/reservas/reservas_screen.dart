@@ -129,14 +129,25 @@ class _ReservasScreenState extends State<ReservasScreen> {
                               ),
                               const SizedBox(height: 10),
 
-                              // Sucursal y Fecha Límite
+                              // Cliente y Sucursal
+                              Row(
+                                children: [
+                                  const Icon(Icons.person, size: 16, color: Color(0xFF4F46E5)),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Cliente: ${r.clienteNombre}',
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
                               Row(
                                 children: [
                                   const Icon(Icons.store, size: 16, color: Color(0xFF4F46E5)),
                                   const SizedBox(width: 6),
                                   Text(
                                     r.sucursalNombre,
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                                   ),
                                 ],
                               ),

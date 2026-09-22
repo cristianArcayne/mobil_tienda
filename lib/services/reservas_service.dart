@@ -40,6 +40,8 @@ class ReservasService extends ChangeNotifier {
     required List<Map<String, dynamic>> items, // [{'variante_id': 1, 'cantidad': 1}]
     int diasVigencia = 2,
     String? horaEstimada,
+    String? clienteId,
+    String? clienteNombre,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -54,6 +56,8 @@ class ReservasService extends ChangeNotifier {
           'detalles': items,
           'dias_vigencia': diasVigencia,
           'hora_estimada': horaEstimada ?? '18:00',
+          if (clienteId != null) 'cliente_id': clienteId,
+          if (clienteNombre != null) 'cliente_nombre': clienteNombre,
         },
       );
 

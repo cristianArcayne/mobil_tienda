@@ -37,10 +37,16 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
       return;
     }
 
+    final user = auth.currentUser;
+    final clienteId = user?.username.isNotEmpty == true ? user!.username : user?.id.toString();
+    final clienteNombre = user?.nombreCompleto;
+
     final resService = Provider.of<ReservasService>(context, listen: false);
     final ok = await resService.crearReserva(
       sucursalId: _sucursalId,
       diasVigencia: _diasVigencia,
+      clienteId: clienteId,
+      clienteNombre: clienteNombre,
       items: [
         {
           'variante_id': widget.variante.id,
