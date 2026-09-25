@@ -5,6 +5,7 @@ import '../../config/theme.dart';
 import '../../services/carrito_service.dart';
 import '../../services/ventas_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/notificaciones_service.dart';
 import 'detalle_compra_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -226,6 +227,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     if (venta != null && mounted) {
       cart.limpiarCarrito();
+      Provider.of<NotificacionesService>(context, listen: false).cargarNotificaciones(mostrarPopupSiHayNueva: true);
+      ventasService.cargarHistorialCompras();
 
       showDialog(
         context: context,
