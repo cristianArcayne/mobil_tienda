@@ -64,13 +64,13 @@ class NotificacionesService extends ChangeNotifier {
             .toList();
       }
 
-      // Si es la primera carga, registrar las existentes sin disparar popup
-      if (_isFirstLoad) {
+      // Si es la primera carga y no se fuerza el popup, registrar existentes silenciosamente
+      if (_isFirstLoad && !mostrarPopupSiHayNueva) {
         for (final n in listaNuevas) {
           _notificacionesVistas.add(n.id);
         }
         _isFirstLoad = false;
-      } else if (mostrarPopupSiHayNueva && _currentContext != null) {
+      } else if (_currentContext != null) {
         // Detectar si hay alguna notificación nueva que no hayamos visto
         for (final n in listaNuevas) {
           if (!_notificacionesVistas.contains(n.id)) {

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/prenda_model.dart';
 import '../../services/reservas_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/notificaciones_service.dart';
 import '../auth/login_screen.dart';
 
 class CrearReservaScreen extends StatefulWidget {
@@ -56,6 +57,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     );
 
     if (ok && mounted) {
+      Provider.of<NotificacionesService>(context, listen: false).cargarNotificaciones(mostrarPopupSiHayNueva: true);
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
