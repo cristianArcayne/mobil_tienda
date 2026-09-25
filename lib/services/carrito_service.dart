@@ -36,10 +36,8 @@ class CarritoService extends ChangeNotifier {
         final response = await ApiClient.get(Environment.carritoPersistente);
         if (response != null && response is Map && response.containsKey('detalles')) {
           final backendCarrito = CarritoModel.fromJson(response as Map<String, dynamic>);
-          if (backendCarrito.items.isNotEmpty) {
-            _items = backendCarrito.items;
-            _persistirLocal();
-          }
+          _items = backendCarrito.items;
+          _persistirLocal();
         }
       }
     } catch (_) {
@@ -100,26 +98,40 @@ class CarritoService extends ChangeNotifier {
       final nuevaCantidad = _items[index].cantidad + delta;
       if (nuevaCantidad > 0) {
         _items[index].cantidad = nuevaCantidad;
+        _persistirLocal();
+        notifyListeners();
       } else {
-        _items.removeAt(index);
+        eliminarItem(varianteId);
       }
-      _persistirLocal();
-      notifyListeners();
     }
   }
 
   // Eliminar item
-  void eliminarItem(int varianteId) {
+  Future<void> eliminarItem(int varianteId) async {
     _items.removeWhere((i) => i.varianteId == varianteId);
     _persistirLocal();
     notifyListeners();
+
+    try {
+      final token = await StorageService.getAccessToken();
+      if (token != null) {
+        await ApiClient.delete('${Environment.carritoPersistente}/items/$varianteId');
+      }
+    } catch (_) {}
   }
 
   // Vaciar carrito
-  void limpiarCarrito() {
+  Future<void> limpiarCarrito() async {
     _items.clear();
     _persistirLocal();
     notifyListeners();
+
+    try {
+      final token = await StorageService.getAccessToken();
+      if (token != null) {
+        await ApiClient.delete('${Environment.carritoPersistente}/vaciar');
+      }
+    } catch (_) {}
   }
 
   void _persistirLocal() {

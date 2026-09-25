@@ -106,7 +106,13 @@ class _NotificacionesScreenState extends State<NotificacionesScreen>
       return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
     }
 
-    final notificaciones = notifService.notificaciones;
+    final notificaciones = notifService.notificaciones.where((n) {
+      final t = n.tipo.toUpperCase();
+      return !t.contains('COMPRA') &&
+             !t.contains('VENTA') &&
+             !t.contains('RESERVA') &&
+             !t.contains('DEVOLUCION');
+    }).toList();
     final promociones = promoService.promociones;
 
     if (notificaciones.isEmpty && promociones.isEmpty) {
