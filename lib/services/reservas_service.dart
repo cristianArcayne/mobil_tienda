@@ -19,9 +19,19 @@ class ReservasService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await ApiClient.get(Environment.reservas);
+      dynamic response;
+      try {
+        response = await ApiClient.get(Environment.reservas);
+      } catch (_) {
+        response = await ApiClient.get('${Environment.reservas}/');
+      }
+
       if (response is List) {
         _reservas = response.map((json) => ReservaModel.fromJson(json as Map<String, dynamic>)).toList();
+      } else if (response is Map && response['results'] is List) {
+        _reservas = (response['results'] as List).map((json) => ReservaModel.fromJson(json as Map<String, dynamic>)).toList();
+      } else if (response is Map && response['reservas'] is List) {
+        _reservas = (response['reservas'] as List).map((json) => ReservaModel.fromJson(json as Map<String, dynamic>)).toList();
       } else {
         _reservas = [];
       }

@@ -46,7 +46,12 @@ class NotificacionesService extends ChangeNotifier {
   // Cargar notificaciones desde el backend
   Future<void> cargarNotificaciones({bool mostrarPopupSiHayNueva = false}) async {
     try {
-      final response = await ApiClient.get(Environment.notificaciones);
+      dynamic response;
+      try {
+        response = await ApiClient.get(Environment.notificaciones);
+      } catch (_) {
+        response = await ApiClient.get('${Environment.notificaciones}/');
+      }
 
       List<NotificacionModel> listaNuevas = [];
 
