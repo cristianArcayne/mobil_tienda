@@ -7,7 +7,6 @@ import '../../services/reservas_service.dart';
 import '../../services/promociones_service.dart';
 import '../../services/notificaciones_service.dart';
 import '../ventas/detalle_compra_screen.dart';
-import '../reservas/reservas_screen.dart';
 
 class NotificacionesScreen extends StatefulWidget {
   const NotificacionesScreen({super.key});
@@ -641,14 +640,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen>
           final isPending = r.estado.toUpperCase() == 'PENDIENTE';
 
           return InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ReservasScreen(),
-                ),
-              );
-            },
+            onTap: () => _mostrarModalDetalleReserva(context, r, service),
             borderRadius: BorderRadius.circular(16),
             child: Container(
               padding: const EdgeInsets.all(16),
@@ -752,6 +744,212 @@ class _NotificacionesScreenState extends State<NotificacionesScreen>
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _mostrarModalDetalleReserva(BuildContext context, dynamic r, ReservasService service) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        builder: (ctx, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Detalle Reserva #${r.id}',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: r.estaActiva ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      r.estado,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: r.estaActiva ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.person_outline, size: 16, color: Color(0xFF4F46E5)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text('Cliente: ${r.clienteNombre}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.storefront, size: 16, color: Color(0xFF4F46E5)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(r.sucursalNombre, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF4F46E5), fontSize: 13)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.timer_outlined, size: 16, color: Color(0xFFD97706)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text('Límite retiro: ${r.fechaLimiteFormateada}', style: const TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.w600, fontSize: 12.5)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Prendas Apartadas (${r.detalles.length}):',
+                style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+              ),
+              const SizedBox(height: 10),
+              if (r.detalles.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: const Text(
+                    'Prenda en apartado presencial Web-to-Store (Reserva registrada)',
+                    style: TextStyle(color: Color(0xFFB45309), fontSize: 13),
+                  ),
+                )
+              else
+                ...r.detalles.map<Widget>((d) => Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: (d.imagenUrl != null && d.imagenUrl!.isNotEmpty)
+                                ? Image.network(
+                                    d.imagenUrl!,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 50,
+                                      height: 50,
+                                      color: const Color(0xFFE2E8F0),
+                                      child: const Icon(Icons.checkroom, color: Color(0xFF64748B)),
+                                    ),
+                                  )
+                                : Container(
+                                    width: 50,
+                                    height: 50,
+                                    color: const Color(0xFFEEF2FF),
+                                    child: const Icon(Icons.checkroom, color: Color(0xFF4F46E5)),
+                                  ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  d.prendaNombre,
+                                  style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w800),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Talla: ${d.talla} • Color: ${d.color}',
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                ),
+                                Text(
+                                  '${d.cantidad}x Bs. ${d.precioUnitario.toStringAsFixed(2)}',
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF4F46E5), fontWeight: FontWeight.w700),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            'Bs. ${d.subtotal.toStringAsFixed(2)}',
+                            style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w900, color: const Color(0xFF10B981)),
+                          ),
+                        ],
+                      ),
+                    )),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Total a Pagar en Tienda:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Bs. ${r.montoTotalEstimado.toStringAsFixed(2)}',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF10B981)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              if (r.estaActiva)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFEF4444),
+                      side: const BorderSide(color: Color(0xFFFECDD3)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      service.cancelarReserva(r.id);
+                    },
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: const Text('Cancelar Esta Reserva'),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

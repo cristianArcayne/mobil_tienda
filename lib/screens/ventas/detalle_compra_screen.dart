@@ -195,9 +195,6 @@ class DetalleCompraScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  _buildFilaInfo('Fecha de Compra:', venta.fechaFormateada.isNotEmpty ? venta.fechaFormateada : venta.fecha),
-                  _buildFilaInfo('Sucursal / Origen:', venta.sucursalNombre),
-                  _buildFilaInfo('Cliente:', venta.clienteNombre),
                   _buildFilaInfo('Factura Fiscal:', venta.numeroFactura ?? 'FAC-ECOM-2026'),
                   _buildFilaInfo('Dirección Entrega:', venta.direccionEnvio ?? 'Entrega a domicilio'),
                   _buildFilaInfo('Método de Pago:', venta.metodoPago ?? 'QR Simple'),
@@ -214,60 +211,22 @@ class DetalleCompraScreen extends StatelessWidget {
                     Text('1x Prenda exclusiva FashionStore', style: GoogleFonts.plusJakartaSans(fontSize: 13))
                   else
                     ...venta.detalles.map(
-                      (d) => Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
+                      (d) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: (d.imagenUrl != null && d.imagenUrl!.isNotEmpty)
-                                  ? Image.network(
-                                      d.imagenUrl!,
-                                      width: 44,
-                                      height: 44,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        width: 44,
-                                        height: 44,
-                                        color: const Color(0xFFE2E8F0),
-                                        child: const Icon(Icons.checkroom, color: Color(0xFF64748B)),
-                                      ),
-                                    )
-                                  : Container(
-                                      width: 44,
-                                      height: 44,
-                                      color: const Color(0xFFEEF2FF),
-                                      child: const Icon(Icons.checkroom, color: Color(0xFF4F46E5)),
-                                    ),
-                            ),
-                            const SizedBox(width: 10),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    d.prendaNombre,
-                                    style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Talla: ${d.talla} • Color: ${d.color} • Cant: ${d.cantidad}',
-                                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B)),
-                                  ),
-                                ],
+                              child: Text(
+                                '${d.cantidad}x ${d.prendaNombre} (${d.talla} / ${d.color})',
+                                style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppTheme.textPrimary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Text(
                               'Bs. ${d.subtotal.toStringAsFixed(2)}',
-                              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13, color: const Color(0xFF0F172A)),
+                              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
                             ),
                           ],
                         ),
