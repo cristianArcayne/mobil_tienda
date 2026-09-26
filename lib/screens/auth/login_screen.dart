@@ -7,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../services/ventas_service.dart';
 import '../../services/carrito_service.dart';
 import '../../services/reservas_service.dart';
+import '../../services/favoritos_service.dart';
 import '../home/main_navigation_screen.dart';
 import 'recuperar_cuenta_screen.dart';
 import 'registro_screen.dart';
