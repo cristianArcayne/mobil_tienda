@@ -210,6 +210,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void _ejecutarPagoFinal() async {
     final cart = Provider.of<CarritoService>(context, listen: false);
     final ventasService = Provider.of<VentasService>(context, listen: false);
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final user = auth.currentUser;
+    final clienteId = user?.username.isNotEmpty == true ? user!.username : user?.id.toString();
 
     final items = cart.items.map((i) => {
       'variante_id': i.varianteId,
@@ -224,6 +227,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       razonSocial: _nombreController.text.trim(),
       nitCliente: _nitController.text.trim(),
       notas: _notasController.text.trim(),
+      clienteId: clienteId,
     );
 
     if (venta != null && mounted) {
@@ -235,7 +239,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         tipo: 'COMPRA',
       );
       Provider.of<NotificacionesService>(context, listen: false).cargarNotificaciones(mostrarPopupSiHayNueva: false);
-      ventasService.cargarHistorialCompras();
+      ventasService.cargarHistorialCompras(clienteId: clienteId);
 
       showDialog(
         context: context,

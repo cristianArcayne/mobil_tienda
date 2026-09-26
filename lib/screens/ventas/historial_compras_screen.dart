@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
+import '../../services/auth_service.dart';
 import '../../services/ventas_service.dart';
 import '../../models/venta_model.dart';
 import 'detalle_compra_screen.dart';
@@ -19,7 +20,10 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
     super.initState();
     Future.microtask(() {
       if (mounted) {
-        Provider.of<VentasService>(context, listen: false).cargarHistorialCompras();
+        final auth = Provider.of<AuthService>(context, listen: false);
+        final u = auth.currentUser;
+        final clienteId = u?.username.isNotEmpty == true ? u!.username : u?.id.toString();
+        Provider.of<VentasService>(context, listen: false).cargarHistorialCompras(clienteId: clienteId);
       }
     });
   }
@@ -72,7 +76,12 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
                   ),
                 )
               : RefreshIndicator(
-                  onRefresh: () => ventasService.cargarHistorialCompras(),
+                  onRefresh: () {
+                    final auth = Provider.of<AuthService>(context, listen: false);
+                    final u = auth.currentUser;
+                    final clienteId = u?.username.isNotEmpty == true ? u!.username : u?.id.toString();
+                    return ventasService.cargarHistorialCompras(clienteId: clienteId);
+                  },
                   child: ListView.separated(
                     padding: const EdgeInsets.all(20),
                     itemCount: ventasService.compras.length,

@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../core/storage_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/ventas_service.dart';
+import '../../services/carrito_service.dart';
+import '../../services/reservas_service.dart';
 import '../home/main_navigation_screen.dart';
 import 'recuperar_cuenta_screen.dart';
 import 'registro_screen.dart';
@@ -58,6 +61,12 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (ok && mounted) {
+        final u = auth.currentUser;
+        final clienteId = u?.username.isNotEmpty == true ? u!.username : u?.id.toString();
+        Provider.of<VentasService>(context, listen: false).limpiarEstado();
+        Provider.of<CarritoService>(context, listen: false).limpiarCarrito();
+        Provider.of<ReservasService>(context, listen: false).cargarReservas();
+        Provider.of<VentasService>(context, listen: false).cargarHistorialCompras(clienteId: clienteId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(

@@ -12,14 +12,24 @@ class VentasService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  void limpiarEstado() {
+    _compras = [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   // Cargar historial de compras del usuario
-  Future<void> cargarHistorialCompras() async {
+  Future<void> cargarHistorialCompras({String? clienteId}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final response = await ApiClient.get(Environment.ventas);
+      final endpoint = (clienteId != null && clienteId.isNotEmpty)
+          ? '${Environment.ventas}/mis-ventas?cliente_ci=$clienteId'
+          : Environment.ventas;
+      final response = await ApiClient.get(endpoint);
       if (response is List) {
         _compras = response.map((json) => VentaModel.fromJson(json as Map<String, dynamic>)).toList();
       } else {
@@ -42,6 +52,7 @@ class VentasService extends ChangeNotifier {
     String? razonSocial,
     String? nitCliente,
     String? notas,
+    String? clienteId,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -57,6 +68,7 @@ class VentasService extends ChangeNotifier {
           'razon_social': razonSocial ?? 'Sin Nombre',
           'nit_cliente': nitCliente ?? '0',
           'notas': notas ?? 'Venta móvil FashionStore',
+          if (clienteId != null) 'cliente_id': clienteId,
         },
       );
 
