@@ -617,7 +617,9 @@ class PerfilScreen extends StatelessWidget {
               Navigator.pop(ctx);
               try {
                 Provider.of<VentasService>(context, listen: false).limpiarEstado();
+                Provider.of<ReservasService>(context, listen: false).limpiarEstado();
                 Provider.of<CarritoService>(context, listen: false).limpiarCarrito();
+                Provider.of<FavoritosService>(context, listen: false).limpiarFavoritos();
               } catch (_) {}
               await auth.logout();
             },

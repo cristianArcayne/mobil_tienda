@@ -7,6 +7,7 @@ class VentasService extends ChangeNotifier {
   List<VentaModel> _compras = [];
   bool _isLoading = false;
   String? _errorMessage;
+  String? _ultimoClienteId;
 
   List<VentaModel> get compras => _compras;
   bool get isLoading => _isLoading;
@@ -14,6 +15,7 @@ class VentasService extends ChangeNotifier {
 
   void limpiarEstado() {
     _compras = [];
+    _ultimoClienteId = null;
     _isLoading = false;
     _errorMessage = null;
     notifyListeners();
@@ -25,10 +27,14 @@ class VentasService extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    if (clienteId != null && clienteId.isNotEmpty) {
+      _ultimoClienteId = clienteId;
+    }
+
     try {
-      final endpoint = (clienteId != null && clienteId.isNotEmpty)
-          ? '${Environment.ventas}/mis-ventas?cliente_ci=$clienteId'
-          : Environment.ventas;
+      final endpoint = (_ultimoClienteId != null && _ultimoClienteId!.isNotEmpty)
+          ? '${Environment.ventas}/mis-ventas?cliente_ci=$_ultimoClienteId'
+          : '${Environment.ventas}/mis-ventas';
       final response = await ApiClient.get(endpoint);
       if (response is List) {
         _compras = response.map((json) => VentaModel.fromJson(json as Map<String, dynamic>)).toList();
@@ -58,6 +64,11 @@ class VentasService extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    final cid = clienteId ?? _ultimoClienteId;
+    if (cid != null && cid.isNotEmpty) {
+      _ultimoClienteId = cid;
+    }
+
     try {
       final response = await ApiClient.post(
         '${Environment.ventas}/ecommerce',
@@ -68,7 +79,7 @@ class VentasService extends ChangeNotifier {
           'razon_social': razonSocial ?? 'Sin Nombre',
           'nit_cliente': nitCliente ?? '0',
           'notas': notas ?? 'Venta móvil FashionStore',
-          if (clienteId != null) 'cliente_id': clienteId,
+          if (cid != null) 'cliente_id': cid,
         },
       );
 

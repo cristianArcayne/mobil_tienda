@@ -25,6 +25,13 @@ class FavoritosService extends ChangeNotifier {
     return _favoritosIds.contains(prendaId);
   }
 
+  void limpiarFavoritos() {
+    _favoritos = [];
+    _favoritosIds.clear();
+    _guardarLocal();
+    notifyListeners();
+  }
+
   // Cargar favoritos desde almacenamiento local y sincronizar con backend
   Future<void> cargarFavoritos() async {
     _isLoading = true;

@@ -16,7 +16,10 @@ class _ReservasScreenState extends State<ReservasScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ReservasService>(context, listen: false).cargarReservas();
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final user = auth.currentUser;
+      final clienteId = user?.username.isNotEmpty == true ? user!.username : user?.id.toString();
+      Provider.of<ReservasService>(context, listen: false).cargarReservas(clienteId: clienteId);
     });
   }
 

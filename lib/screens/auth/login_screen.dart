@@ -64,9 +64,14 @@ class _LoginScreenState extends State<LoginScreen> {
         final u = auth.currentUser;
         final clienteId = u?.username.isNotEmpty == true ? u!.username : u?.id.toString();
         Provider.of<VentasService>(context, listen: false).limpiarEstado();
+        Provider.of<ReservasService>(context, listen: false).limpiarEstado();
         Provider.of<CarritoService>(context, listen: false).limpiarCarrito();
-        Provider.of<ReservasService>(context, listen: false).cargarReservas();
+        Provider.of<FavoritosService>(context, listen: false).limpiarFavoritos();
+
+        Provider.of<ReservasService>(context, listen: false).cargarReservas(clienteId: clienteId);
         Provider.of<VentasService>(context, listen: false).cargarHistorialCompras(clienteId: clienteId);
+        Provider.of<CarritoService>(context, listen: false).cargarCarrito();
+        Provider.of<FavoritosService>(context, listen: false).cargarFavoritos();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(

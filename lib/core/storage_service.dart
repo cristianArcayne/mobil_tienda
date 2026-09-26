@@ -120,6 +120,9 @@ class StorageService {
     await prefs.remove(_keyAccessToken);
     await prefs.remove(_keyRefreshToken);
     await prefs.remove(_keyUserData);
+    await prefs.remove(_keyOfflineCart);
+    await prefs.remove(_keyClienteId);
+    await prefs.remove('fs_favoritos_prendas');
   }
 }
 

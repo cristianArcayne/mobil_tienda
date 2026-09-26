@@ -7,23 +7,37 @@ class ReservasService extends ChangeNotifier {
   List<ReservaModel> _reservas = [];
   bool _isLoading = false;
   String? _errorMessage;
+  String? _ultimoClienteId;
 
   List<ReservaModel> get reservas => _reservas;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // Listar reservas del cliente
-  Future<void> cargarReservas() async {
+  void limpiarEstado() {
+    _reservas = [];
+    _ultimoClienteId = null;
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  // Listar reservas del cliente autenticado
+  Future<void> cargarReservas({String? clienteId}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
+    if (clienteId != null && clienteId.isNotEmpty) {
+      _ultimoClienteId = clienteId;
+    }
+
     try {
+      final queryParam = (_ultimoClienteId != null && _ultimoClienteId!.isNotEmpty) ? '?cliente_ci=$_ultimoClienteId' : '';
       dynamic response;
       try {
-        response = await ApiClient.get(Environment.reservas);
+        response = await ApiClient.get('${Environment.reservas}/mis-reservas$queryParam');
       } catch (_) {
-        response = await ApiClient.get('${Environment.reservas}/');
+        response = await ApiClient.get('${Environment.reservas}$queryParam');
       }
 
       if (response is List) {
@@ -57,6 +71,8 @@ class ReservasService extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    final cid = clienteId ?? _ultimoClienteId;
+
     try {
       final response = await ApiClient.post(
         Environment.reservas,
@@ -66,13 +82,13 @@ class ReservasService extends ChangeNotifier {
           'detalles': items,
           'dias_vigencia': diasVigencia,
           'hora_estimada': horaEstimada ?? '18:00',
-          if (clienteId != null) 'cliente_id': clienteId,
+          if (cid != null) 'cliente_id': cid,
           if (clienteNombre != null) 'cliente_nombre': clienteNombre,
         },
       );
 
       _isLoading = false;
-      await cargarReservas();
+      await cargarReservas(clienteId: cid);
       return response != null;
     } catch (e) {
       _errorMessage = e.toString();
@@ -86,7 +102,7 @@ class ReservasService extends ChangeNotifier {
   Future<bool> cancelarReserva(int reservaId) async {
     try {
       await ApiClient.put('${Environment.reservas}/$reservaId/cancelar', {});
-      await cargarReservas();
+      await cargarReservas(clienteId: _ultimoClienteId);
       return true;
     } catch (e) {
       _errorMessage = e.toString();
