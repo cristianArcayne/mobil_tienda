@@ -365,7 +365,6 @@ class DetalleCompraScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   if (venta.detalles.isNotEmpty)
                     DropdownButtonFormField<String>(
-                      isExpanded: true,
                       value: prendaSeleccionada,
                       decoration: InputDecoration(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -376,20 +375,12 @@ class DetalleCompraScreen extends StatelessWidget {
                       items: [
                         DropdownMenuItem(
                           value: 'Pedido Completo #${venta.id}',
-                          child: Text(
-                            'Todo el Pedido #${venta.id} (Bs. ${venta.montoTotal.toStringAsFixed(2)})',
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
+                          child: Text('Ttodo el Pedido #${venta.id} (Bs. ${venta.montoTotal.toStringAsFixed(2)})'),
                         ),
                         ...venta.detalles.map(
                           (d) => DropdownMenuItem(
                             value: d.prendaNombre,
-                            child: Text(
-                              '${d.cantidad}x ${d.prendaNombre} (${d.talla}/${d.color}) - Bs. ${d.subtotal.toStringAsFixed(2)}',
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
+                            child: Text('${d.cantidad}x ${d.prendaNombre} (${d.talla}/${d.color}) - Bs. ${d.subtotal.toStringAsFixed(2)}'),
                           ),
                         ),
                       ],

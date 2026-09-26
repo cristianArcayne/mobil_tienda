@@ -6,6 +6,7 @@ import '../../services/carrito_service.dart';
 import '../../services/ventas_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/notificaciones_service.dart';
+import '../../widgets/in_app_notification_banner.dart';
 import 'detalle_compra_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -227,7 +228,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     if (venta != null && mounted) {
       cart.limpiarCarrito();
-      Provider.of<NotificacionesService>(context, listen: false).cargarNotificaciones(mostrarPopupSiHayNueva: true);
+      InAppNotificationBanner.show(
+        context,
+        title: '¡Compra Exitosa! 🛍️',
+        message: 'Tu pedido #${venta.id} por Bs. ${venta.montoTotal.toStringAsFixed(2)} ha sido procesado correctamente.',
+        tipo: 'COMPRA',
+      );
+      Provider.of<NotificacionesService>(context, listen: false).cargarNotificaciones(mostrarPopupSiHayNueva: false);
       ventasService.cargarHistorialCompras();
 
       showDialog(

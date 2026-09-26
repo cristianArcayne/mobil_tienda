@@ -4,6 +4,7 @@ import '../../models/prenda_model.dart';
 import '../../services/reservas_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/notificaciones_service.dart';
+import '../../widgets/in_app_notification_banner.dart';
 import '../auth/login_screen.dart';
 
 class CrearReservaScreen extends StatefulWidget {
@@ -57,7 +58,13 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     );
 
     if (ok && mounted) {
-      Provider.of<NotificacionesService>(context, listen: false).cargarNotificaciones(mostrarPopupSiHayNueva: true);
+      InAppNotificationBanner.show(
+        context,
+        title: '¡Reserva Registrada! 🏪',
+        message: 'Tu reserva de "${widget.prenda.nombre}" fue procesada con éxito. Puedes pasar a retirar por tienda.',
+        tipo: 'RESERVA',
+      );
+      Provider.of<NotificacionesService>(context, listen: false).cargarNotificaciones(mostrarPopupSiHayNueva: false);
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
