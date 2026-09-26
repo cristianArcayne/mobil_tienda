@@ -723,7 +723,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen>
                           const Icon(Icons.timer_outlined, size: 14, color: Color(0xFFD97706)),
                           const SizedBox(width: 4),
                           Text(
-                            'Límite: ${r.fechaLimite}',
+                            'Límite: ${r.fechaLimiteFormateada}',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,

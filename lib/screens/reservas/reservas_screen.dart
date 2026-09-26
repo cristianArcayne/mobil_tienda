@@ -97,6 +97,8 @@ class _ReservasScreenState extends State<ReservasScreen> {
                       final activa = r.estaActiva;
 
                       return Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
@@ -132,7 +134,7 @@ class _ReservasScreenState extends State<ReservasScreen> {
                               // Cliente y Sucursal
                               Row(
                                 children: [
-                                  const Icon(Icons.person, size: 16, color: Color(0xFF4F46E5)),
+                                  const Icon(Icons.person_outline, size: 16, color: Color(0xFF4F46E5)),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Cliente: ${r.clienteNombre}',
@@ -143,46 +145,99 @@ class _ReservasScreenState extends State<ReservasScreen> {
                               const SizedBox(height: 6),
                               Row(
                                 children: [
-                                  const Icon(Icons.store, size: 16, color: Color(0xFF4F46E5)),
+                                  const Icon(Icons.storefront, size: 16, color: Color(0xFF4F46E5)),
                                   const SizedBox(width: 6),
                                   Text(
                                     r.sucursalNombre,
-                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF4F46E5)),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 6),
                               Row(
                                 children: [
-                                  const Icon(Icons.schedule, size: 16, color: Color(0xFFF59E0B)),
+                                  const Icon(Icons.timer_outlined, size: 16, color: Color(0xFFD97706)),
                                   const SizedBox(width: 6),
-                                  Text(
-                                    'Retirar antes de: ${r.fechaLimite}',
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                  Expanded(
+                                    child: Text(
+                                      'Retirar antes de: ${r.fechaLimiteFormateada}',
+                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFFD97706)),
+                                    ),
                                   ),
                                 ],
                               ),
                               const Divider(height: 20),
 
-                              // Items de la reserva
-                              ...r.detalles.map((d) => Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 3),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          '${d.cantidad}x ${d.prendaNombre} (${d.talla}, ${d.color})',
-                                          style: const TextStyle(fontSize: 13),
-                                        ),
-                                        Text(
-                                          'Bs. ${d.subtotal.toStringAsFixed(2)}',
-                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                                        ),
-                                      ],
-                                    ),
-                                  )),
+                              // Items / Prendas de la reserva
+                              if (r.detalles.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  child: Text(
+                                    'Prenda en apartado presencial Web-to-Store',
+                                    style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                                  ),
+                                )
+                              else
+                                ...r.detalles.map((d) => Container(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF8FAFC),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: (d.imagenUrl != null && d.imagenUrl!.isNotEmpty)
+                                                ? Image.network(
+                                                    d.imagenUrl!,
+                                                    width: 46,
+                                                    height: 46,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (_, __, ___) => Container(
+                                                      width: 46,
+                                                      height: 46,
+                                                      color: const Color(0xFFE2E8F0),
+                                                      child: const Icon(Icons.checkroom, color: Color(0xFF64748B)),
+                                                    ),
+                                                  )
+                                                : Container(
+                                                    width: 46,
+                                                    height: 46,
+                                                    color: const Color(0xFFEEF2FF),
+                                                    child: const Icon(Icons.checkroom, color: Color(0xFF4F46E5)),
+                                                  ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  d.prendaNombre,
+                                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  'Talla: ${d.talla} • Color: ${d.color} • Cant: ${d.cantidad}',
+                                                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Text(
+                                            'Bs. ${d.subtotal.toStringAsFixed(2)}',
+                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                          ),
+                                        ],
+                                      ),
+                                    )),
 
-                              const Divider(height: 20),
+                              const Divider(height: 16),
 
                               // Monto y Cancelar
                               Row(
@@ -193,9 +248,14 @@ class _ReservasScreenState extends State<ReservasScreen> {
                                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF10B981)),
                                   ),
                                   if (activa)
-                                    TextButton(
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: const Color(0xFFEF4444),
+                                        side: const BorderSide(color: Color(0xFFFECDD3)),
+                                      ),
                                       onPressed: () => _confirmarCancelar(context, resService, r.id),
-                                      child: const Text('Cancelar', style: TextStyle(color: Color(0xFFEF4444))),
+                                      icon: const Icon(Icons.cancel_outlined, size: 16),
+                                      label: const Text('Cancelar'),
                                     ),
                                 ],
                               ),

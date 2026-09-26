@@ -3,6 +3,7 @@ class DetalleReservaModel {
   final int varianteId;
   final int cantidad;
   final String prendaNombre;
+  final String? imagenUrl;
   final String talla;
   final String color;
   final double precioUnitario;
@@ -13,6 +14,7 @@ class DetalleReservaModel {
     required this.varianteId,
     required this.cantidad,
     required this.prendaNombre,
+    this.imagenUrl,
     required this.talla,
     required this.color,
     required this.precioUnitario,
@@ -25,6 +27,7 @@ class DetalleReservaModel {
       varianteId: json['variante_id'] is int ? json['variante_id'] : int.tryParse(json['variante_id'].toString()) ?? 0,
       cantidad: json['cantidad'] is int ? json['cantidad'] : int.tryParse(json['cantidad'].toString()) ?? 1,
       prendaNombre: json['prenda_nombre']?.toString() ?? 'Prenda',
+      imagenUrl: json['imagen_url']?.toString() ?? json['imagen_principal']?.toString(),
       talla: json['talla']?.toString() ?? 'Única',
       color: json['color']?.toString() ?? 'Estándar',
       precioUnitario: double.tryParse(json['precio_unitario']?.toString() ?? '0') ?? 0.0,
@@ -57,6 +60,24 @@ class ReservaModel {
   });
 
   bool get estaActiva => estado == 'PENDIENTE' || estado == 'CONFIRMADA';
+
+  static String formatFechaLimpia(String rawIso) {
+    if (rawIso.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(rawIso).toLocal();
+      final day = dt.day.toString().padLeft(2, '0');
+      final month = dt.month.toString().padLeft(2, '0');
+      final year = dt.year;
+      final hour = dt.hour.toString().padLeft(2, '0');
+      final min = dt.minute.toString().padLeft(2, '0');
+      return '$day/$month/$year $hour:$min hs';
+    } catch (_) {
+      return rawIso.replaceAll('T', ' ').split('.').first;
+    }
+  }
+
+  String get fechaFormateada => formatFechaLimpia(fecha);
+  String get fechaLimiteFormateada => formatFechaLimpia(fechaLimite);
 
   factory ReservaModel.fromJson(Map<String, dynamic> json) {
     var rawDetalles = json['detalles'] as List? ?? [];

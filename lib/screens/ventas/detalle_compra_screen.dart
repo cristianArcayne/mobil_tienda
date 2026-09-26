@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../models/venta_model.dart';
+import '../../services/ventas_service.dart';
 
 class DetalleCompraScreen extends StatelessWidget {
   final VentaModel venta;
@@ -252,6 +254,28 @@ class DetalleCompraScreen extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
+            const SizedBox(height: 20),
+
+            // Botón Solicitar Devolución / Reembolso (24h)
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFE11D48),
+                  side: const BorderSide(color: Color(0xFFFDA4AF), width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () => _mostrarModalDevolucion(context),
+                icon: const Icon(Icons.assignment_return_outlined, size: 20),
+                label: Text(
+                  'Solicitar Devolución / Reembolso (24h)',
+                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+
             // Botón Regresar
             SizedBox(
               width: double.infinity,
@@ -271,6 +295,218 @@ class DetalleCompraScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _mostrarModalDevolucion(BuildContext context) {
+    final motivoCtrl = TextEditingController();
+    final cuentaCtrl = TextEditingController();
+    String? prendaSeleccionada = venta.detalles.isNotEmpty ? venta.detalles.first.prendaNombre : 'Pedido Completo #${venta.id}';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFE4E6),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.assignment_return_outlined, color: Color(0xFFE11D48), size: 22),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Solicitar Reembolso (24h)',
+                            style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(modalCtx),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Puedes solicitar el reembolso de tu pedido #${venta.id} dentro de las 24 horas posteriores a la compra.',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Selección de prenda a devolver
+                  Text(
+                    'Prenda / Item a Devolver:',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 6),
+                  if (venta.detalles.isNotEmpty)
+                    DropdownButtonFormField<String>(
+                      value: prendaSeleccionada,
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                      ),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'Pedido Completo #${venta.id}',
+                          child: Text('Ttodo el Pedido #${venta.id} (Bs. ${venta.montoTotal.toStringAsFixed(2)})'),
+                        ),
+                        ...venta.detalles.map(
+                          (d) => DropdownMenuItem(
+                            value: d.prendaNombre,
+                            child: Text('${d.cantidad}x ${d.prendaNombre} (${d.talla}/${d.color}) - Bs. ${d.subtotal.toStringAsFixed(2)}'),
+                          ),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        setModalState(() => prendaSeleccionada = val);
+                      },
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Text('Pedido #${venta.id} - Total Bs. ${venta.montoTotal.toStringAsFixed(2)}'),
+                    ),
+                  const SizedBox(height: 14),
+
+                  // Motivo de reembolso
+                  Text(
+                    'Motivo de la Devolución:',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: motivoCtrl,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'Ej. La talla no me quedó bien / Defecto en costura',
+                      hintStyle: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textMuted),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Datos bancarios / QR para transferencia
+                  Text(
+                    'Cuenta Bancaria o Alias QR para Reembolso (Opcional):',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: cuentaCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'Ej. Banco Mercantil Cta 1000... / Alias QR',
+                      hintStyle: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textMuted),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Botón enviar
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE11D48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () async {
+                        if (motivoCtrl.text.trim().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Por favor ingresa el motivo del reembolso.')),
+                          );
+                          return;
+                        }
+
+                        final motivoCompleto = 'Prenda: $prendaSeleccionada. Motivo: ${motivoCtrl.text.trim()}';
+                        final service = Provider.of<VentasService>(context, listen: false);
+                        final ok = await service.solicitarDevolucion(
+                          ventaId: venta.id,
+                          motivo: motivoCompleto,
+                          cuentaBancariaQr: cuentaCtrl.text.trim().isNotEmpty ? cuentaCtrl.text.trim() : null,
+                        );
+
+                        if (context.mounted) {
+                          Navigator.pop(ctx);
+                          if (ok) {
+                            showDialog(
+                              context: context,
+                              builder: (dialogCtx) => AlertDialog(
+                                title: const Row(
+                                  children: [
+                                    Icon(Icons.check_circle, color: Color(0xFF059669)),
+                                    SizedBox(width: 8),
+                                    Text('Solicitud Enviada'),
+                                  ],
+                                ),
+                                content: Text(
+                                  'Tu solicitud de devolución para el pedido #${venta.id} fue registrada exitosamente.\n\nEl equipo de administración revisará la solicitud y procesará la devolución dentro del panel web.',
+                                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(dialogCtx),
+                                    child: const Text('Entendido'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(service.errorMessage ?? 'No se pudo enviar la solicitud de devolución.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: Text(
+                        'Enviar Solicitud de Reembolso',
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

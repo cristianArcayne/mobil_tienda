@@ -36,8 +36,8 @@ class VentasService extends ChangeNotifier {
 
   // Procesar venta digital e-commerce con checkout
   Future<VentaModel?> procesarCheckout({
-    required List<Map<String, dynamic>> items, // [{'variante_id': 1, 'cantidad': 1, 'precio_unitario': 150}]
-    required String metodoPago, // 'QR_SIMPLE', 'TARJETA', 'TRANSFERENCIA'
+    required List<Map<String, dynamic>> items,
+    required String metodoPago,
     required String direccionEnvio,
     String? razonSocial,
     String? nitCliente,
@@ -75,5 +75,49 @@ class VentasService extends ChangeNotifier {
       return null;
     }
   }
-}
 
+  // Solicitar devolución / reembolso (24h)
+  Future<bool> solicitarDevolucion({
+    required int ventaId,
+    required String motivo,
+    String? cuentaBancariaQr,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await ApiClient.post(
+        '${Environment.baseUrl}/devoluciones/solicitar',
+        {
+          'venta_id': ventaId,
+          'motivo': motivo,
+          'cuenta_bancaria_qr': cuentaBancariaQr ?? 'Cuenta de origen / QR',
+        },
+      );
+      _isLoading = false;
+      notifyListeners();
+      return response != null;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // Verificar si la venta es elegible para devolución (menos de 24h)
+  Future<Map<String, dynamic>?> verificarElegibilidadDevolucion(int ventaId) async {
+    try {
+      final response = await ApiClient.get(
+        '${Environment.baseUrl}/devoluciones/verificar-elegibilidad/$ventaId',
+      );
+      if (response is Map) {
+        return response as Map<String, dynamic>;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+}
