@@ -1,6 +1,7 @@
 class DetalleVentaModel {
   final int id;
   final String prendaNombre;
+  final String? imagenUrl;
   final String talla;
   final String color;
   final int cantidad;
@@ -10,6 +11,7 @@ class DetalleVentaModel {
   DetalleVentaModel({
     required this.id,
     required this.prendaNombre,
+    this.imagenUrl,
     required this.talla,
     required this.color,
     required this.cantidad,
@@ -21,6 +23,7 @@ class DetalleVentaModel {
     return DetalleVentaModel(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
       prendaNombre: json['prenda_nombre']?.toString() ?? 'Prenda',
+      imagenUrl: json['imagen_url']?.toString() ?? json['imagen_principal']?.toString(),
       talla: json['talla']?.toString() ?? 'Única',
       color: json['color']?.toString() ?? 'Estándar',
       cantidad: json['cantidad'] is int ? json['cantidad'] : int.tryParse(json['cantidad'].toString()) ?? 1,
@@ -38,6 +41,8 @@ class VentaModel {
   final String? metodoPago;
   final String? numeroFactura;
   final String? direccionEnvio;
+  final String sucursalNombre;
+  final String clienteNombre;
   final List<DetalleVentaModel> detalles;
 
   VentaModel({
@@ -48,8 +53,27 @@ class VentaModel {
     this.metodoPago,
     this.numeroFactura,
     this.direccionEnvio,
+    required this.sucursalNombre,
+    required this.clienteNombre,
     required this.detalles,
   });
+
+  static String formatFechaLimpia(String rawIso) {
+    if (rawIso.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(rawIso).toLocal();
+      final day = dt.day.toString().padLeft(2, '0');
+      final month = dt.month.toString().padLeft(2, '0');
+      final year = dt.year;
+      final hour = dt.hour.toString().padLeft(2, '0');
+      final min = dt.minute.toString().padLeft(2, '0');
+      return '$day/$month/$year $hour:$min hs';
+    } catch (_) {
+      return rawIso.replaceAll('T', ' ').split('.').first;
+    }
+  }
+
+  String get fechaFormateada => formatFechaLimpia(fecha);
 
   factory VentaModel.fromJson(Map<String, dynamic> json) {
     var rawDetalles = json['detalles'] as List? ?? [];
@@ -69,6 +93,8 @@ class VentaModel {
       metodoPago: json['metodo_pago_nombre']?.toString() ?? json['metodo_pago']?.toString() ?? 'QR Simple',
       numeroFactura: nroFactura ?? 'FAC-ECOM-2026',
       direccionEnvio: json['direccion_envio']?.toString() ?? 'Entrega a domicilio',
+      sucursalNombre: json['sucursal_nombre']?.toString() ?? 'Sucursal Central (Av. Principal)',
+      clienteNombre: json['cliente_nombre']?.toString() ?? json['cliente_id']?.toString() ?? 'Cliente Registrado',
       detalles: rawDetalles.map((d) => DetalleVentaModel.fromJson(d as Map<String, dynamic>)).toList(),
     );
   }

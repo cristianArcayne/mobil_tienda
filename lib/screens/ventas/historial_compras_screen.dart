@@ -87,123 +87,192 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
   }
 
   Widget _buildVentaCard(BuildContext context, VentaModel venta) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEFE9E3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => DetalleCompraScreen(venta: venta)),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEEF2FF),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.local_mall_outlined, color: AppTheme.primaryColor, size: 20),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Pedido #${venta.id}',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
-                                color: AppTheme.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              venta.numeroFactura ?? 'FAC-ECOM-2026',
-                              style: GoogleFonts.plusJakartaSans(fontSize: 11, color: AppTheme.textMuted),
-                            ),
-                          ],
-                        ),
-                      ],
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => DetalleCompraScreen(venta: venta)),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Cabecera Venta / Compra
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Compra #${venta.id}',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        venta.estado.toUpperCase(),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF059669),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 10),
-                  child: Divider(color: Color(0xFFF1F5F9)),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${venta.detalles.length} ${venta.detalles.length == 1 ? "artículo" : "artículos"}',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textSecondary),
-                    ),
-                    Text(
-                      'Bs. ${venta.montoTotal.toStringAsFixed(2)}',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: const Color(0xFF10B981),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Ver seguimiento y QR',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
+                    child: Text(
+                      venta.estado.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.primaryColor,
+                        color: Color(0xFF15803D),
                       ),
                     ),
-                    const Icon(Icons.chevron_right, size: 16, color: AppTheme.primaryColor),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Cliente, Sucursal y Fecha
+              Row(
+                children: [
+                  const Icon(Icons.person_outline, size: 16, color: Color(0xFF4F46E5)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Cliente: ${venta.clienteNombre}',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.storefront, size: 16, color: Color(0xFF4F46E5)),
+                  const SizedBox(width: 6),
+                  Text(
+                    venta.sucursalNombre,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF4F46E5)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today_outlined, size: 16, color: Color(0xFF0D9488)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Fecha de compra: ${venta.fechaFormateada.isNotEmpty ? venta.fechaFormateada : venta.fecha}',
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF0D9488)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.receipt_long_outlined, size: 16, color: Color(0xFF64748B)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Factura: ${venta.numeroFactura ?? "FAC-ECOM-2026"} • Pago: ${venta.metodoPago ?? "QR Simple"}',
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 20),
+
+              // Items / Prendas de la venta
+              if (venta.detalles.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'Artículos adquiridos en tienda física / e-commerce',
+                    style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                  ),
+                )
+              else
+                ...venta.detalles.map((d) => Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: (d.imagenUrl != null && d.imagenUrl!.isNotEmpty)
+                                ? Image.network(
+                                    d.imagenUrl!,
+                                    width: 46,
+                                    height: 46,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 46,
+                                      height: 46,
+                                      color: const Color(0xFFE2E8F0),
+                                      child: const Icon(Icons.checkroom, color: Color(0xFF64748B)),
+                                    ),
+                                  )
+                                : Container(
+                                    width: 46,
+                                    height: 46,
+                                    color: const Color(0xFFEEF2FF),
+                                    child: const Icon(Icons.checkroom, color: Color(0xFF4F46E5)),
+                                  ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  d.prendaNombre,
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Talla: ${d.talla} • Color: ${d.color} • Cant: ${d.cantidad}',
+                                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            'Bs. ${d.subtotal.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                          ),
+                        ],
+                      ),
+                    )),
+
+              const Divider(height: 16),
+
+              // Monto total y Acción
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total pagado: Bs. ${venta.montoTotal.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF10B981)),
+                  ),
+                  const Row(
+                    children: [
+                      Text(
+                        'Ver Detalle / Reembolso',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF4F46E5)),
+                      ),
+                      Icon(Icons.chevron_right, size: 18, color: Color(0xFF4F46E5)),
+                    ],
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
