@@ -384,39 +384,7 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                     const SizedBox(height: 20),
                   ],
 
-                  // Botón Destacado: Probar con IA
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxDecoration(color: const Color(0xFF4F46E5).withValues(alpha: 0.3)).color != null
-                            ? BoxShadow(color: const Color(0xFF4F46E5).withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))
-                            : const BoxShadow(),
-                      ],
-                    ),
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      icon: const Icon(Icons.auto_awesome, color: Colors.white),
-                      label: const Text('Probar con IA en Vestidor Virtual', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => VestidorVirtualScreen(prendaInicial: p),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  
                   // Botón Probar en Vivo AR
                   Container(
                     width: double.infinity,
