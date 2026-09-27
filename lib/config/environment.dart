@@ -16,7 +16,7 @@ class Environment {
     }
 
     // Por defecto se conecta al backend en la nube en Render
-    return 'https://tienda-backend-kvfk.onrender.com';
+    return 'https://tu-backend-desplegado.onrender.com'; // TODO: CAMBIAR POR LA URL DEL BACKEND DESPLEGADO
   }
   
   // Clave de API de Google AI Studio / Gemini para pruebas virtuales (BFF)
@@ -48,7 +48,7 @@ class Environment {
   static String get resenas => '$apiV1/resenas';
   static String get stripePagos => '$apiV1/pagos/stripe';
 
-  // Formatea URLs relativas (/static/uploads/...) a URLs absolutas (http://127.0.0.1:8000/static/uploads/...)
+  // Formatea URLs relativas (/static/uploads/...) a URLs absolutas (http://192.168.1.3:8000/static/uploads/...)
   static String formatImageUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     if (url.startsWith('http://') || url.startsWith('https://')) return url;

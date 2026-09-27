@@ -10,6 +10,8 @@ import '../../widgets/rating_stars.dart';
 import '../../widgets/stock_badge.dart';
 import '../resenas/resenas_list_screen.dart';
 import '../vestidor/vestidor_virtual_screen.dart';
+import '../live_ar_screen.dart';
+
 import '../reservas/crear_reserva_screen.dart';
 
 class DetalleProductoScreen extends StatefulWidget {
@@ -399,6 +401,43 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                       },
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  // Botón Probar en Vivo AR
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      icon: const Icon(Icons.camera_alt, color: Colors.white),
+                      label: const Text('Probar en Vivo (Cámara AR)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      onPressed: () {
+                        List<String> colores = p.variantes
+                              .map((v) => v.color)
+                              .where((c) => c != 'Estándar' && c != 'Única' && c.isNotEmpty)
+                              .toSet()
+                              .toList();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => LiveArScreen(
+                                prendaUrl: p.imagenPrincipal ?? '', 
+                                prendaNombre: p.nombre,
+                                coloresDisponibles: colores,
+                              ),),
+                        );
+                      },
+                    ),
+                  ),
+
                   const SizedBox(height: 12),
 
                   // Botón Reservar Web-to-Store

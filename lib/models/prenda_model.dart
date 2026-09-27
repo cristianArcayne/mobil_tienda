@@ -29,7 +29,7 @@ class VariantePrendaModel {
     return VariantePrendaModel(
       id: parsedId,
       talla: json['talla']?.toString() ?? 'Única',
-      color: json['color']?.toString() ?? 'Estándar',
+      color: (json['color'] is Map) ? (json['color']['nombre']?.toString() ?? 'Estándar') : (json['color']?.toString() ?? 'Estándar'),
       codBarra: (json['sku'] ?? json['cod_barra'])?.toString(),
       stockDisponible: parsedStock,
       estadoStock: estado.toString(),
