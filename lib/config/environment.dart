@@ -16,7 +16,7 @@ class Environment {
     }
 
     // Por defecto se conecta al backend en la nube en Render
-    return 'https://tu-backend-desplegado.onrender.com'; // TODO: CAMBIAR POR LA URL DEL BACKEND DESPLEGADO
+    return 'https://tienda-backend-kvfk.onrender.com';
   }
   
   // Claves de API para Vestidor Virtual
