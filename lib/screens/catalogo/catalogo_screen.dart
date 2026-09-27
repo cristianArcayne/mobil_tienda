@@ -12,6 +12,9 @@ import '../auth/login_screen.dart';
 import '../auth/perfil_screen.dart';
 import '../carrito/carrito_screen.dart';
 import '../notificaciones/notificaciones_screen.dart';
+import '../../models/prenda_model.dart';
+import '../../services/ia_service.dart';
+import '../../services/favoritos_service.dart';
 import '../vestidor/vestidor_virtual_screen.dart';
 import 'detalle_producto_screen.dart';
 
@@ -34,6 +37,13 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
       final service = Provider.of<CatalogoService>(context, listen: false);
       service.cargarCategorias();
       service.cargarCatalogo();
+
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final iaService = Provider.of<IAService>(context, listen: false);
+      final clienteIdentifier = auth.currentUser?.email.isNotEmpty == true 
+          ? auth.currentUser!.email 
+          : (auth.currentUser?.username.isNotEmpty == true ? auth.currentUser!.username : auth.currentUser?.id);
+      iaService.generarOutfit(clienteId: clienteIdentifier);
     });
   }
 
@@ -58,7 +68,7 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
-  void _abrirVestidorIA() {
+  void _abrirVestidorIA({PrendaModel? prendaInicial, List<PrendaModel>? prendasOutfit}) {
     final auth = Provider.of<AuthService>(context, listen: false);
     if (!auth.isAuthenticated) {
       GuestRestrictionDialog.show(
@@ -68,7 +78,12 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const VestidorVirtualScreen()),
+        MaterialPageRoute(
+          builder: (_) => VestidorVirtualScreen(
+            prendaInicial: prendaInicial,
+            prendasRecomendadas: prendasOutfit,
+          ),
+        ),
       );
     }
   }
@@ -555,158 +570,199 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
                 ),
               const SizedBox(height: 24),
 
-              // Widget: RECOMENDADO POR TU ESTILISTA IA
+              // Widget: RECOMENDADO POR TU ESTILISTA IA (Prendas reales basadas en compras y favoritos)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0F7FF),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFD6E8FE)),
-                  ),
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Header Estilista
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Consumer2<IAService, CatalogoService>(
+                  builder: (context, iaService, catalogoService, _) {
+                    // 1. Obtener prendas del outfit recomendado por IA
+                    List<PrendaModel> prendasOutfit = [];
+                    if (iaService.outfitActual != null && iaService.outfitActual!.prendas.isNotEmpty) {
+                      prendasOutfit = List.from(iaService.outfitActual!.prendas);
+                    }
+
+                    // 2. Si no hay outfit aún, usar favoritos del cliente
+                    if (prendasOutfit.isEmpty) {
+                      final favService = Provider.of<FavoritosService>(context, listen: false);
+                      if (favService.favoritos.isNotEmpty) {
+                        prendasOutfit = List.from(favService.favoritos);
+                      }
+                    }
+
+                    // 3. Fallback a catálogo real del negocio
+                    if (prendasOutfit.isEmpty && catalogoService.prendas.isNotEmpty) {
+                      prendasOutfit = List.from(catalogoService.prendas);
+                    }
+
+                    if (prendasOutfit.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+
+                    // Tomar máximo 3 prendas para el layout armónico
+                    final prendasMostrar = prendasOutfit.take(3).toList();
+                    final double totalCalculado = iaService.outfitActual?.precioTotalEstimado != null && iaService.outfitActual!.precioTotalEstimado > 0
+                        ? iaService.outfitActual!.precioTotalEstimado
+                        : prendasMostrar.fold<double>(0.0, (acc, p) => acc + (p.precioConDescuento ?? p.precio));
+
+                    final matchScore = iaService.outfitActual?.scoreAfinidad != null
+                        ? '${iaService.outfitActual!.scoreAfinidad.toStringAsFixed(0)}% Match'
+                        : '98% Match';
+                    final nombreOutfit = iaService.outfitActual?.titulo ?? "Look Completo: 'Urban Tailored Casual'";
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F7FF),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFD6E8FE)),
+                      ),
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // Header Estilista
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Container(
-                                width: 34,
-                                height: 34,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF0F172A),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Center(
-                                  child: Icon(Icons.psychology_outlined, size: 18, color: Colors.white),
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 34,
+                                      height: 34,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF0F172A),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Center(
+                                        child: Icon(Icons.psychology_outlined, size: 18, color: Colors.white),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'RECOMENDADO POR TU ESTILISTA IA',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.8,
+                                              color: const Color(0xFF0F172A),
+                                            ),
+                                          ),
+                                          Text(
+                                            nombreOutfit,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 11,
+                                              color: const Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: const Color(0xFF93C5FD)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.auto_awesome, size: 12, color: Color(0xFF2563EB)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      matchScore,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF2563EB),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Mini Prendas reales del outfit
+                          Row(
+                            children: [
+                              for (int i = 0; i < prendasMostrar.length; i++) ...[
+                                if (i > 0) const SizedBox(width: 10),
+                                _buildOutfitThumbnail(
+                                  prendasMostrar[i],
+                                  () => _abrirVestidorIA(
+                                    prendaInicial: prendasMostrar[i],
+                                    prendasOutfit: prendasMostrar,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+
+                          // Total y Botón Probar Conjunto
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'RECOMENDADO POR TU ESTILISTA IA',
+                                    'SET COMPLETO (${prendasMostrar.length} PRENDAS)',
                                     style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
                                       letterSpacing: 0.8,
-                                      color: const Color(0xFF0F172A),
+                                      color: const Color(0xFF64748B),
                                     ),
                                   ),
                                   Text(
-                                    'Look Completo: \'Urban Tailored Casual\'',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 11,
-                                      color: const Color(0xFF64748B),
+                                    'Bs. ${totalCalculado.toStringAsFixed(2)}',
+                                    style: GoogleFonts.playfairDisplay(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF0F172A),
                                     ),
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0xFF93C5FD)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.auto_awesome, size: 12, color: Color(0xFF2563EB)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '98% Match',
+                              ElevatedButton.icon(
+                                onPressed: () => _abrirVestidorIA(
+                                  prendaInicial: prendasMostrar.first,
+                                  prendasOutfit: prendasMostrar,
+                                ),
+                                icon: const Icon(Icons.checkroom, size: 16),
+                                label: Text(
+                                  'PROBAR CONJUNTO',
                                   style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF2563EB),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.8,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 3 Mini Prendas
-                      Row(
-                        children: [
-                          _buildOutfitThumbnail(
-                            'Blazer Lino',
-                            '\$129.990',
-                            'https://images.unsplash.com/photo-1598808503746-f34c53b9323e?auto=format&fit=crop&w=300&q=80',
-                          ),
-                          const SizedBox(width: 10),
-                          _buildOutfitThumbnail(
-                            'Polera Oversize',
-                            '\$29.990',
-                            'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=300&q=80',
-                          ),
-                          const SizedBox(width: 10),
-                          _buildOutfitThumbnail(
-                            'Jeans Selvedge',
-                            '\$64.990',
-                            'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=300&q=80',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Total y Botón Probar Conjunto
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'SET COMPLETO (3 PRENDAS)',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.8,
-                                  color: const Color(0xFF64748B),
-                                ),
-                              ),
-                              Text(
-                                '\$224.970',
-                                style: GoogleFonts.playfairDisplay(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF0F172A),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF0F172A),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
                               ),
                             ],
                           ),
-                          ElevatedButton.icon(
-                            onPressed: _abrirVestidorIA,
-                            icon: const Icon(Icons.checkroom, size: 16),
-                            label: Text(
-                              'PROBAR CONJUNTO',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0F172A),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                          ),
                         ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 32),
@@ -717,52 +773,64 @@ class _CatalogoScreenState extends State<CatalogoScreen> {
     );
   }
 
-  Widget _buildOutfitThumbnail(String name, String price, String imgUrl) {
+  Widget _buildOutfitThumbnail(PrendaModel prenda, VoidCallback onTap) {
+    final precioStr = 'Bs. ${(prenda.precioConDescuento ?? prenda.precio).toStringAsFixed(2)}';
+    final imgUrl = prenda.imagenPrincipal;
+
     return Expanded(
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-        ),
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: Image.network(
-                  imgUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: const Color(0xFFF1F5F9),
-                    child: const Icon(Icons.checkroom, color: Color(0xFF94A3B8)),
-                  ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: imgUrl != null && imgUrl.isNotEmpty
+                      ? Image.network(
+                          imgUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: const Color(0xFFF1F5F9),
+                            child: const Icon(Icons.checkroom, color: Color(0xFF94A3B8)),
+                          ),
+                        )
+                      : Container(
+                          color: const Color(0xFFF1F5F9),
+                          child: const Icon(Icons.checkroom, color: Color(0xFF94A3B8)),
+                        ),
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF0F172A),
+              const SizedBox(height: 6),
+              Text(
+                prenda.nombre,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF0F172A),
+                ),
               ),
-            ),
-            Text(
-              price,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF64748B),
+              Text(
+                precioStr,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF64748B),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

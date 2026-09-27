@@ -11,8 +11,13 @@ import '../../services/catalogo_service.dart';
 
 class VestidorVirtualScreen extends StatefulWidget {
   final PrendaModel? prendaInicial;
+  final List<PrendaModel>? prendasRecomendadas;
 
-  const VestidorVirtualScreen({super.key, this.prendaInicial});
+  const VestidorVirtualScreen({
+    super.key,
+    this.prendaInicial,
+    this.prendasRecomendadas,
+  });
 
   @override
   State<VestidorVirtualScreen> createState() => _VestidorVirtualScreenState();
@@ -119,10 +124,18 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   ];
 
   List<PrendaModel> _getPrendas(CatalogoService catalogo) {
-    // Priorizar prendas reales del catálogo (ya cargadas del backend)
     List<PrendaModel> list = [];
     
-    // Primero agregar todas las prendas reales del catálogo
+    // 1. Priorizar prendas del outfit recomendado por IA si fueron pasadas
+    if (widget.prendasRecomendadas != null && widget.prendasRecomendadas!.isNotEmpty) {
+      for (var p in widget.prendasRecomendadas!) {
+        if (!list.any((element) => element.id == p.id)) {
+          list.add(p);
+        }
+      }
+    }
+
+    // 2. Agregar todas las prendas reales del catálogo
     for (var p in catalogo.prendas) {
       if (!list.any((element) => element.id == p.id)) {
         list.add(p);
@@ -156,14 +169,17 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
   @override
   void initState() {
     super.initState();
-    _prendaSeleccionada = widget.prendaInicial;
+    _prendaSeleccionada = widget.prendaInicial ?? 
+        (widget.prendasRecomendadas != null && widget.prendasRecomendadas!.isNotEmpty
+            ? widget.prendasRecomendadas!.first
+            : null);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final catalogo = Provider.of<CatalogoService>(context, listen: false);
       if (catalogo.prendas.isEmpty) {
         await catalogo.cargarCatalogo();
       }
-      // Auto-seleccionar la primera prenda del catálogo real si no hay prendaInicial
+      // Auto-seleccionar la primera prenda si no se ha seleccionado ninguna
       if (_prendaSeleccionada == null && catalogo.prendas.isNotEmpty) {
         setState(() {
           _prendaSeleccionada = catalogo.prendas.first;
@@ -712,6 +728,32 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                                           ),
                                         ),
                                       ),
+                                      if (widget.prendasRecomendadas != null && widget.prendasRecomendadas!.any((pr) => pr.id == p.id)) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEFF6FF),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.auto_awesome, size: 10, color: Color(0xFF2563EB)),
+                                              SizedBox(width: 2),
+                                              Text(
+                                                'Recomendado IA',
+                                                style: TextStyle(
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Color(0xFF2563EB),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                       const SizedBox(width: 8),
                                       Text(
                                         'Bs ${p.precio.toStringAsFixed(2)}',
