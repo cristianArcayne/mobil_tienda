@@ -41,6 +41,21 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
     _cargarDetalle();
   }
 
+  String _getImageUrl(String base) {
+    if (_selectedVariante != null) {
+      String color = _selectedVariante!.color.toLowerCase();
+      String suffix = '';
+      if (color.contains('negro') || color.contains('black')) suffix = '_negro';
+      else if (color.contains('azul') || color.contains('blue')) suffix = '_azul';
+      else if (color.contains('rojo') || color.contains('red')) suffix = '_rojo';
+      else suffix = '_${color.split(' ')[0]}';
+
+      if (base.endsWith('.jpg')) return base.replaceAll('.jpg', '$suffix.jpg');
+      if (base.endsWith('.png')) return base.replaceAll('.png', '$suffix.png');
+    }
+    return base;
+  }
+
   Future<void> _cargarDetalle() async {
     final service = Provider.of<CatalogoService>(context, listen: false);
     final p = await service.obtenerPrendaDetalle(widget.prendaId);
