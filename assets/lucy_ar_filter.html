@@ -132,12 +132,17 @@
                 inputVideo.srcObject = stream;
                 await inputVideo.play();
 
-                const apiKey = "dct_si2-parcial_qOCBWVtsCDmnrhLMjaIYMTjRJMnTqIOvtoCrcHWOepoDKFWkVSfgFowaeMznUrJw";
+                // Pool de claves Decart AI con conmutación automática por agotamiento de tokens
+                const decartApiKeys = [
+                    "dct_tienda-virtual_MFvQCKqLlCmcRVTfIGcoypZXfkiCWGeOrqgzFsbOKpCdEZhgJQERagVnPbbXqQzq",
+                    "dct_si2-parcial_qOCBWVtsCDmnrhLMjaIYMTjRJMnTqIOvtoCrcHWOepoDKFWkVSfgFowaeMznUrJw"
+                ];
+
                 const garmentUrl = baseGarmentUrl || 'https://via.placeholder.com/300';
                 globalGarmentBase64 = garmentUrl;
                 
                 // Convert local image to Base64 so the Cloud AI can read it
-                if (garmentUrl.includes('192.168')) {
+                if (garmentUrl.includes('192.168') || garmentUrl.startsWith('http://10.0.2.2') || garmentUrl.startsWith('http://127.0.0.1')) {
                     try {
                         const res = await fetch(garmentUrl);
                         const blob = await res.blob();
@@ -152,22 +157,42 @@
                     }
                 }
                 
-                try {
-                    const client = createDecartClient({ apiKey: apiKey });
-                    session = await client.realtime.connect(stream, {
-                        model: models.realtime("lucy-vton-3.5"),
-                        onRemoteStream: (transformedStream) => {
-                            outputVideo.srcObject = transformedStream;
-                            outputVideo.play();
-                        },
-                        initialState: { 
-                            image: globalGarmentBase64,
-                            referenceImage: globalGarmentBase64,
-                            prompt: { text: "virtual try on this clothing", image: globalGarmentBase64 }
-                        }
-                    });
-                } catch (e) {
-                    throw new Error("Error conectando a Decart: " + e.message);
+                let sessionConnected = false;
+                let lastError = null;
+
+                for (let k = 0; k < decartApiKeys.length; k++) {
+                    const currentKey = decartApiKeys[k];
+                    const keyPreview = currentKey.substring(0, 19) + "...";
+                    console.log(`[Decart AI] Intentando conectar con clave #${k + 1}/${decartApiKeys.length} (${keyPreview})...`);
+                    loader.innerHTML = `<h3>Conectando a Vestidor Virtual IA...</h3><p>Validando tokens de servicio (${k + 1}/${decartApiKeys.length})...</p>`;
+
+                    try {
+                        const client = createDecartClient({ apiKey: currentKey });
+                        session = await client.realtime.connect(stream, {
+                            model: models.realtime("lucy-vton-3.5"),
+                            onRemoteStream: (transformedStream) => {
+                                outputVideo.srcObject = transformedStream;
+                                outputVideo.play();
+                            },
+                            initialState: { 
+                                image: globalGarmentBase64,
+                                referenceImage: globalGarmentBase64,
+                                prompt: { text: "virtual try on this clothing", image: globalGarmentBase64 }
+                            }
+                        });
+
+                        console.log(`[Decart AI] ¡Conexión establecida con éxito con la clave #${k + 1}!`);
+                        sessionConnected = true;
+                        break;
+                    } catch (e) {
+                        console.warn(`[Decart AI] Clave #${k + 1} falló o agotó sus tokens:`, e);
+                        lastError = e;
+                        // Continúa al siguiente ciclo para probar la siguiente clave API
+                    }
+                }
+
+                if (!sessionConnected) {
+                    throw new Error("No se pudo conectar a Decart AI. Todas las claves agotaron sus tokens o fallaron: " + (lastError ? lastError.message : "Error desconocido"));
                 }
                 
                 loader.style.display = 'none';
@@ -196,7 +221,6 @@
             }
         }
 
-                        
         window.changeColor = async function(colorName) {
             if(!session) return;
             const loader = document.getElementById('loader');
@@ -257,69 +281,6 @@
         };
 
         window.onload = startAR;
-
-    </script>
-        window.changeColor = async function(colorName) {
-            if(!session) return;
-            const loader = document.getElementById('loader');
-            loader.style.display = 'block';
-            loader.innerHTML = '<p>Cargando foto real de ' + colorName + '...</p>';
-            try {
-                const engColor = getEnglishForColor(colorName);
-                let imageToUse = globalGarmentBase64;
-                
-                if (baseGarmentUrl) {
-                    try {
-                        let newUrl = baseGarmentUrl;
-                        let suffix = "";
-                        const cleanColor = colorName.toLowerCase();
-                        if (cleanColor.includes('negro') || cleanColor.includes('black')) {
-                            suffix = '_negro';
-                        } else if (cleanColor.includes('azul') || cleanColor.includes('blue')) {
-                            suffix = '_azul';
-                        } else if (cleanColor.includes('rojo') || cleanColor.includes('red')) {
-                            suffix = '_rojo';
-                        } else {
-                            suffix = '_' + cleanColor.split(' ')[0];
-                        }
-
-                        if (newUrl.endsWith('.jpg')) {
-                            newUrl = newUrl.replace('.jpg', suffix + '.jpg');
-                        } else if (newUrl.endsWith('.png')) {
-                            newUrl = newUrl.replace('.png', suffix + '.png');
-                        }
-                        
-                        console.log("Fetching new image:", newUrl);
-                        const res = await fetch(newUrl);
-                        if (res.ok) {
-                            const blob = await res.blob();
-                            imageToUse = await new Promise((resolve) => {
-                                const reader = new FileReader();
-                                reader.onloadend = () => resolve(reader.result);
-                                reader.readAsDataURL(blob);
-                            });
-                            console.log("¡Imagen descargada exitosamente!");
-                        } else {
-                            console.log("Fallback a la imagen original, status:", res.status);
-                        }
-                    } catch(e) {
-                        console.error("Error obteniendo nueva imagen:", e);
-                    }
-                }
-                
-                await session.update({
-                    image: imageToUse,
-                    referenceImage: imageToUse,
-                    prompt: { text: 'virtual try on this ' + engColor + ' clothing', image: imageToUse }
-                });
-            } catch(e) {
-                console.error("Failed to change color", e);
-            }
-            loader.style.display = 'none';
-        };
-
-        window.onload = startAR;
-
     </script>
 </body>
 </html>

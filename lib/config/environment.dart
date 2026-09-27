@@ -19,7 +19,11 @@ class Environment {
     return 'https://tu-backend-desplegado.onrender.com'; // TODO: CAMBIAR POR LA URL DEL BACKEND DESPLEGADO
   }
   
-  // Clave de API de Google AI Studio / Gemini para pruebas virtuales (BFF)
+  // Claves de API para Vestidor Virtual
+  static const List<String> decartApiKeys = [
+    'dct_tienda-virtual_MFvQCKqLlCmcRVTfIGcoypZXfkiCWGeOrqgzFsbOKpCdEZhgJQERagVnPbbXqQzq',
+    'dct_si2-parcial_qOCBWVtsCDmnrhLMjaIYMTjRJMnTqIOvtoCrcHWOepoDKFWkVSfgFowaeMznUrJw',
+  ];
   static const String segmindApiKey = '';
   static const String geminiApiKey = '';
   static const String geminiModel = 'gemini-2.5-flash-image';
