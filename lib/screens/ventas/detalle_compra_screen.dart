@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../models/venta_model.dart';
 import '../../services/ventas_service.dart';
+import '../../services/notificaciones_service.dart';
+import '../../widgets/in_app_notification_banner.dart';
 
 class DetalleCompraScreen extends StatelessWidget {
   final VentaModel venta;
@@ -463,6 +465,22 @@ class DetalleCompraScreen extends StatelessWidget {
                         if (context.mounted) {
                           Navigator.pop(ctx);
                           if (ok) {
+                            // Mostrar banner flotante en la app
+                            InAppNotificationBanner.show(
+                              context,
+                              title: '🚨 Solicitud de Reembolso Enviada',
+                              message: 'Tu solicitud para el pedido #${venta.id} por Bs. ${venta.montoTotal.toStringAsFixed(2)} ha sido enviada al administrador.',
+                              tipo: 'DEVOLUCION',
+                            );
+
+                            // Recargar notificaciones e historial
+                            try {
+                              Provider.of<NotificacionesService>(context, listen: false)
+                                  .cargarNotificaciones(mostrarPopupSiHayNueva: false);
+                              Provider.of<VentasService>(context, listen: false)
+                                  .cargarHistorialCompras();
+                            } catch (_) {}
+
                             showDialog(
                               context: context,
                               builder: (dialogCtx) => AlertDialog(

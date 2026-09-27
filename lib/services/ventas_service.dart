@@ -109,15 +109,32 @@ class VentasService extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    final payload = {
+      'venta_id': ventaId,
+      'motivo': motivo,
+      'cuenta_bancaria_qr': cuentaBancariaQr ?? 'Cuenta de origen / QR',
+    };
+
     try {
-      final response = await ApiClient.post(
-        '${Environment.baseUrl}/devoluciones/solicitar',
-        {
-          'venta_id': ventaId,
-          'motivo': motivo,
-          'cuenta_bancaria_qr': cuentaBancariaQr ?? 'Cuenta de origen / QR',
-        },
-      );
+      dynamic response;
+      try {
+        response = await ApiClient.post(
+          '${Environment.apiV1}/devoluciones/solicitar',
+          payload,
+        );
+      } catch (_) {
+        try {
+          response = await ApiClient.post(
+            '${Environment.baseUrl}/devoluciones/solicitar',
+            payload,
+          );
+        } catch (_) {
+          response = await ApiClient.post(
+            '${Environment.baseUrl}/api/devoluciones/solicitar',
+            payload,
+          );
+        }
+      }
       _isLoading = false;
       notifyListeners();
       return response != null;
@@ -132,9 +149,22 @@ class VentasService extends ChangeNotifier {
   // Verificar si la venta es elegible para devolución (menos de 24h)
   Future<Map<String, dynamic>?> verificarElegibilidadDevolucion(int ventaId) async {
     try {
-      final response = await ApiClient.get(
-        '${Environment.baseUrl}/devoluciones/verificar-elegibilidad/$ventaId',
-      );
+      dynamic response;
+      try {
+        response = await ApiClient.get(
+          '${Environment.apiV1}/devoluciones/verificar-elegibilidad/$ventaId',
+        );
+      } catch (_) {
+        try {
+          response = await ApiClient.get(
+            '${Environment.baseUrl}/devoluciones/verificar-elegibilidad/$ventaId',
+          );
+        } catch (_) {
+          response = await ApiClient.get(
+            '${Environment.baseUrl}/api/devoluciones/verificar-elegibilidad/$ventaId',
+          );
+        }
+      }
       if (response is Map) {
         return response as Map<String, dynamic>;
       }
