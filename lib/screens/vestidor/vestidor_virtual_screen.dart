@@ -354,7 +354,7 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vestidor Virtual IA'),
+        title: const Text('Vestidor Virtual Google IA Cloud'),
       ),
       body: vestidor.isLoading
           ? Center(
@@ -451,10 +451,10 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Vestidor Fotorrealista Segmind IA',
+                      Text('Vestidor Fotorrealista Google IA Cloud',
                           style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1E1B4B))),
                       SizedBox(height: 2),
-                      Text('Tómate una foto (cara, medio cuerpo o completo) y visualiza la prenda adaptada con precisión fotorrealista.',
+                      Text('Tómate una foto o sube una imagen y visualiza la prenda adaptada con inteligencia artificial en la nube.',
                           style: TextStyle(fontSize: 12, color: Color(0xFF4338CA))),
                     ],
                   ),

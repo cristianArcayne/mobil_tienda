@@ -385,12 +385,12 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                   ],
 
                   
-                  // Botón Probar en Vivo AR
+                  // Botón Principal: Probar en Vestidor Google IA Cloud
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
+                        colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
                       ),
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -400,25 +400,49 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                         shadowColor: Colors.transparent,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      icon: const Icon(Icons.camera_alt, color: Colors.white),
-                      label: const Text('Probar en Vivo (Cámara AR)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      icon: const Icon(Icons.auto_awesome, color: Colors.white),
+                      label: const Text(
+                        'Probar en Vestidor Google IA Cloud',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                      ),
                       onPressed: () {
-                        List<String> colores = p.variantes
-                              .map((v) => v.color)
-                              .where((c) => c != 'Estándar' && c != 'Única' && c.isNotEmpty)
-                              .toSet()
-                              .toList();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => LiveArScreen(
-                                prendaUrl: p.imagenPrincipal ?? '', 
-                                prendaNombre: p.nombre,
-                                coloresDisponibles: colores,
-                              ),),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => VestidorVirtualScreen(prendaInicial: p),
+                          ),
                         );
                       },
                     ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Botón Secundario: Probar en Vivo (Cámara AR Tiempo Real)
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(44),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                    label: const Text('Probar en Vivo (Cámara AR Tiempo Real)'),
+                    onPressed: () {
+                      List<String> colores = p.variantes
+                          .map((v) => v.color)
+                          .where((c) => c != 'Estándar' && c != 'Única' && c.isNotEmpty)
+                          .toSet()
+                          .toList();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LiveArScreen(
+                            prendaUrl: p.imagenPrincipal ?? '',
+                            prendaNombre: p.nombre,
+                            coloresDisponibles: colores,
+                          ),
+                        ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 12),
