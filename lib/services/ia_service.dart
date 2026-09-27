@@ -30,7 +30,7 @@ class IAService extends ChangeNotifier {
   }
 
   // Enviar mensaje al Asistente de Moda
-  Future<void> enviarMensaje(String texto) async {
+  Future<void> enviarMensaje(String texto, {dynamic clienteId}) async {
     _mensajes.add(
       ChatMessageModel(
         text: texto,
@@ -42,11 +42,16 @@ class IAService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final Map<String, dynamic> body = {
+        'mensaje': texto,
+      };
+      if (clienteId != null) {
+        body['cliente_id'] = clienteId;
+      }
+
       final response = await ApiClient.post(
         '${Environment.iaRecomendador}/chat',
-        {
-          'mensaje': texto,
-        },
+        body,
         requireAuth: false,
       );
 
@@ -63,10 +68,21 @@ class IAService extends ChangeNotifier {
         if (response.containsKey('prendas_sugeridas') && response['prendas_sugeridas'] != null) {
           final list = response['prendas_sugeridas'] as List? ?? [];
           sugerencias = list.map((p) => PrendaModel.fromJson(p as Map<String, dynamic>)).toList();
-        } else if (response.containsKey('outfit_recomendado') && response['outfit_recomendado'] != null) {
+        } 
+        
+        if (sugerencias.isEmpty && response.containsKey('outfit_recomendado') && response['outfit_recomendado'] != null) {
           final outMap = response['outfit_recomendado'] as Map<String, dynamic>?;
-          if (outMap != null && outMap.containsKey('prendas')) {
-            final pList = outMap['prendas'] as List? ?? [];
+          if (outMap != null) {
+            final List<dynamic> pList = [];
+            if (outMap['prenda_principal'] != null) {
+              pList.add(outMap['prenda_principal']);
+            }
+            if (outMap['prendas_complementarias'] is List) {
+              pList.addAll(outMap['prendas_complementarias']);
+            }
+            if (outMap['prendas'] is List) {
+              pList.addAll(outMap['prendas']);
+            }
             sugerencias = pList.map((p) => PrendaModel.fromJson(p as Map<String, dynamic>)).toList();
           }
         }
@@ -96,16 +112,22 @@ class IAService extends ChangeNotifier {
   }
 
   // Generar un Outfit inteligente completo
-  Future<OutfitRecomendadoModel?> generarOutfit({String estilo = 'Casual'}) async {
+  Future<OutfitRecomendadoModel?> generarOutfit({String estilo = 'Casual', dynamic clienteId}) async {
     _isLoading = true;
     notifyListeners();
 
     try {
+      final Map<String, dynamic> body = {
+        'ocasion': estilo,
+        'estilo_preferido': estilo,
+      };
+      if (clienteId != null) {
+        body['cliente_id'] = clienteId;
+      }
+
       final response = await ApiClient.post(
         '${Environment.iaRecomendador}/generar-outfit',
-        {
-          'estilo': estilo,
-        },
+        body,
         requireAuth: false,
       );
 

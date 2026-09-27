@@ -84,10 +84,14 @@ class PrendaModel {
       }
     }
 
-    String? rawPrinc = json['imagen_principal']?.toString();
+    String? rawPrinc = json['imagen_principal']?.toString() ?? json['imagen_uri']?.toString() ?? json['imagen']?.toString();
     String? imgPrinc = rawPrinc != null && rawPrinc.isNotEmpty 
         ? Environment.formatImageUrl(rawPrinc) 
         : (imgUrls.isNotEmpty ? imgUrls.first : null);
+
+    if (imgPrinc != null && imgUrls.isEmpty) {
+      imgUrls.add(imgPrinc);
+    }
 
     // Mapeo robusto de precios (precio_base, precio_minimo, precio)
     final rawPrecio = json['precio_base'] ?? json['precio'] ?? json['precio_minimo'] ?? '0';
@@ -109,10 +113,13 @@ class PrendaModel {
     final estado = json['estado_global_stock']?.toString() ?? 
         (json['disponible_en_cadena'] == false || parsedStock <= 0 ? 'AGOTADO' : (parsedStock <= 5 ? 'ULTIMAS_UNIDADES' : 'DISPONIBLE'));
 
+    final rawId = json['ropa_id'] ?? json['id'] ?? 0;
+    final int parsedId = rawId is int ? rawId : int.tryParse(rawId.toString()) ?? 0;
+
     return PrendaModel(
-      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      id: parsedId,
       nombre: json['nombre']?.toString() ?? 'Prenda',
-      descripcion: json['descripcion']?.toString() ?? '',
+      descripcion: json['descripcion']?.toString() ?? json['motivo_sugerencia']?.toString() ?? '',
       precio: parsedPrecio,
       precioConDescuento: parsedPromo,
       categoriaNombre: json['categoria_nombre']?.toString() ?? json['categoria']?.toString(),

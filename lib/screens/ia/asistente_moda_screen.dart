@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../services/ia_service.dart';
+import '../../services/auth_service.dart';
 import '../catalogo/detalle_producto_screen.dart';
 
 class AsistenteModaScreen extends StatefulWidget {
@@ -36,7 +37,14 @@ class _AsistenteModaScreenState extends State<AsistenteModaScreen> {
     if (msg.trim().isEmpty) return;
     _textController.clear();
     final ia = Provider.of<IAService>(context, listen: false);
-    ia.enviarMensaje(msg.trim());
+    final auth = Provider.of<AuthService>(context, listen: false);
+    final clienteId = (auth.currentUser?.email != null && auth.currentUser!.email.isNotEmpty)
+        ? auth.currentUser!.email
+        : ((auth.currentUser?.username != null && auth.currentUser!.username.isNotEmpty)
+            ? auth.currentUser!.username
+            : auth.currentUser?.id);
+
+    ia.enviarMensaje(msg.trim(), clienteId: clienteId);
 
     Future.delayed(const Duration(milliseconds: 300), () {
       if (_scrollController.hasClients) {
@@ -190,52 +198,95 @@ class _AsistenteModaScreenState extends State<AsistenteModaScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 6),
-                                    ...m.prendasSugeridas!.map((p) => Container(
-                                      margin: const EdgeInsets.only(top: 6),
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF1F5F9),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.checkroom, color: Color(0xFF4F46E5), size: 18),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  p.nombre,
-                                                  style: GoogleFonts.plusJakartaSans(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: AppTheme.textPrimary,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  'Bs. ${p.precio.toStringAsFixed(2)}',
-                                                  style: GoogleFonts.plusJakartaSans(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w800,
-                                                    color: const Color(0xFF059669),
-                                                  ),
-                                                ),
-                                              ],
+                                    ...m.prendasSugeridas!.map((p) => InkWell(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (_) => DetalleProductoScreen(prendaId: p.id)),
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        margin: const EdgeInsets.only(top: 6),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF1F5F9),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: (p.imagenPrincipal != null && p.imagenPrincipal!.isNotEmpty)
+                                                  ? Image.network(
+                                                      p.imagenPrincipal!,
+                                                      width: 46,
+                                                      height: 46,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (_, __, ___) => Container(
+                                                        width: 46,
+                                                        height: 46,
+                                                        color: const Color(0xFFEEF2FF),
+                                                        child: const Icon(Icons.checkroom, color: Color(0xFF4F46E5), size: 24),
+                                                      ),
+                                                    )
+                                                  : Container(
+                                                      width: 46,
+                                                      height: 46,
+                                                      color: const Color(0xFFEEF2FF),
+                                                      child: const Icon(Icons.checkroom, color: Color(0xFF4F46E5), size: 24),
+                                                    ),
                                             ),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.arrow_forward, size: 16, color: Color(0xFF4F46E5)),
-                                            onPressed: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(builder: (_) => DetalleProductoScreen(prendaId: p.id)),
-                                              );
-                                            },
-                                          ),
-                                        ],
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    p.nombre,
+                                                    style: GoogleFonts.plusJakartaSans(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: AppTheme.textPrimary,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  if (p.categoriaNombre != null && p.categoriaNombre!.isNotEmpty) ...[
+                                                    Text(
+                                                      p.categoriaNombre!,
+                                                      style: GoogleFonts.plusJakartaSans(
+                                                        fontSize: 10.5,
+                                                        color: const Color(0xFF64748B),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    'Bs. ',
+                                                    style: GoogleFonts.plusJakartaSans(
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.w800,
+                                                      color: const Color(0xFF059669),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.arrow_forward, size: 16, color: Color(0xFF4F46E5)),
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(builder: (_) => DetalleProductoScreen(prendaId: p.id)),
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    )),
+                                    ))
                                   ],
                                 ],
                               ),
