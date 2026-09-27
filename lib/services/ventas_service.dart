@@ -59,6 +59,7 @@ class VentasService extends ChangeNotifier {
     String? nitCliente,
     String? notas,
     String? clienteId,
+    String? tokenPasarela,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -80,8 +81,104 @@ class VentasService extends ChangeNotifier {
           'nit_cliente': nitCliente ?? '0',
           'notas': notas ?? 'Venta móvil FashionStore',
           if (cid != null) 'cliente_id': cid,
+          if (tokenPasarela != null) 'token_pasarela': tokenPasarela,
         },
       );
+
+      _isLoading = false;
+      if (response != null && response is Map) {
+        final venta = VentaModel.fromJson(response as Map<String, dynamic>);
+        _compras.insert(0, venta);
+        notifyListeners();
+        return venta;
+      }
+      return null;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  // Crear Intento de Pago Seguro con Stripe
+  Future<Map<String, dynamic>?> crearIntentoPagoStripe({
+    required double monto,
+    String? clienteId,
+    String? descripcion,
+  }) async {
+    try {
+      dynamic response;
+      try {
+        response = await ApiClient.post(
+          '${Environment.stripePagos}/crear-intento',
+          {
+            'monto': monto,
+            'moneda': 'bob',
+            if (clienteId != null) 'cliente_id': clienteId,
+            'descripcion': descripcion ?? 'Compra en FashionStore Móvil',
+          },
+        );
+      } catch (_) {
+        response = await ApiClient.post(
+          '${Environment.baseUrl}/pagos/stripe/crear-intento',
+          {
+            'monto': monto,
+            'moneda': 'bob',
+            if (clienteId != null) 'cliente_id': clienteId,
+            'descripcion': descripcion ?? 'Compra en FashionStore Móvil',
+          },
+        );
+      }
+
+      if (response is Map) {
+        return response as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return null;
+    }
+  }
+
+  // Confirmar Pago con Stripe y emitir orden fiscal
+  Future<VentaModel?> confirmarPagoStripe({
+    required String paymentIntentId,
+    required List<Map<String, dynamic>> items,
+    required String direccionEnvio,
+    String? razonSocial,
+    String? nitCliente,
+    String? notas,
+    String? clienteId,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final cid = clienteId ?? _ultimoClienteId;
+    final payload = {
+      'payment_intent_id': paymentIntentId,
+      'items': items,
+      'direccion_envio': direccionEnvio,
+      'razon_social': razonSocial ?? 'Cliente FashionStore',
+      'nit_cliente': nitCliente ?? '0',
+      'notas': notas ?? 'Pago con Pasarela Stripe',
+      if (cid != null) 'cliente_id': cid,
+    };
+
+    try {
+      dynamic response;
+      try {
+        response = await ApiClient.post(
+          '${Environment.stripePagos}/confirmar-pago',
+          payload,
+        );
+      } catch (_) {
+        response = await ApiClient.post(
+          '${Environment.baseUrl}/pagos/stripe/confirmar-pago',
+          payload,
+        );
+      }
 
       _isLoading = false;
       if (response != null && response is Map) {

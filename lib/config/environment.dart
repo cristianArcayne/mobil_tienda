@@ -46,6 +46,7 @@ class Environment {
   static String get vestidorAr => '$apiV1/ar';
   static String get iaRecomendador => '$apiV1/ia';
   static String get resenas => '$apiV1/resenas';
+  static String get stripePagos => '$apiV1/pagos/stripe';
 
   // Formatea URLs relativas (/static/uploads/...) a URLs absolutas (http://127.0.0.1:8000/static/uploads/...)
   static String formatImageUrl(String? url) {
