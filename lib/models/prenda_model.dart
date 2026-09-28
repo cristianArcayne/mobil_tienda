@@ -93,8 +93,11 @@ class PrendaModel {
         ? Environment.formatImageUrl(rawPrinc) 
         : (imgUrls.isNotEmpty ? imgUrls.first : null);
 
-    if (imgPrinc != null && imgUrls.isEmpty) {
-      imgUrls.add(imgPrinc);
+    if (imgPrinc != null) {
+      if (imgUrls.contains(imgPrinc)) {
+        imgUrls.remove(imgPrinc);
+      }
+      imgUrls.insert(0, imgPrinc);
     }
 
     for (var v in varsList) {

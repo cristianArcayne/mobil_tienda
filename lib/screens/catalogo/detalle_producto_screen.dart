@@ -44,54 +44,73 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
 
   String _getDisplayImageUrl(PrendaModel? p) {
     if (p == null) return '';
-    
-    // 1. Si la variante seleccionada tiene su propia foto subida desde la web, usarla como prioridad absoluta
-    if (_selectedVariante != null && _selectedVariante!.imagenUrl != null && _selectedVariante!.imagenUrl!.isNotEmpty) {
-      return _selectedVariante!.imagenUrl!;
+
+    // 1. Si el usuario hizo clic explícito en una foto de la galería
+    if (_selectedImageOverride != null && _selectedImageOverride!.trim().isNotEmpty) {
+      return _selectedImageOverride!.trim();
     }
 
-    // 2. Si se seleccionó una foto específica de la galería
-    if (_selectedImageOverride != null && _selectedImageOverride!.isNotEmpty) {
-      return _selectedImageOverride!;
+    // 2. Si la variante seleccionada tiene su propia foto subida desde la web
+    if (_selectedVariante != null &&
+        _selectedVariante!.imagenUrl != null &&
+        _selectedVariante!.imagenUrl!.trim().isNotEmpty) {
+      return _selectedVariante!.imagenUrl!.trim();
     }
-    
-    // 3. Si no, buscar coincidencia por color en las imágenes del producto
+
+    // 3. Buscar si otra variante con el MISMO COLOR tiene foto asignada (ej: misma prenda en otro talle)
+    if (_selectedVariante != null && p.variantes.isNotEmpty) {
+      final colorTarget = _selectedVariante!.color.trim().toLowerCase();
+      final mismaVarianteConFoto = p.variantes.where((v) =>
+          v.color.trim().toLowerCase() == colorTarget &&
+          v.imagenUrl != null &&
+          v.imagenUrl!.trim().isNotEmpty);
+      if (mismaVarianteConFoto.isNotEmpty) {
+        return mismaVarianteConFoto.first.imagenUrl!.trim();
+      }
+    }
+
+    // 4. Buscar coincidencia por nombre de color en las imágenes del producto
     if (_selectedVariante != null && p.imagenes.isNotEmpty) {
       final colorNom = _selectedVariante!.color.toLowerCase().trim();
-      
-      // 1. Coincidencia directa por nombre de color en la URL
-      for (final img in p.imagenes) {
-        if (img.toLowerCase().contains(colorNom)) {
-          return img;
-        }
-      }
-      
-      // 2. Coincidencia por términos clave comunes de color
-      final keywords = <String>[];
-      if (colorNom.contains('negro') || colorNom.contains('black') || colorNom.contains('oscuro')) {
-        keywords.addAll(['negro', 'black', 'dark']);
-      } else if (colorNom.contains('azul') || colorNom.contains('blue') || colorNom.contains('denim')) {
-        keywords.addAll(['azul', 'blue', 'denim']);
-      } else if (colorNom.contains('rojo') || colorNom.contains('red')) {
-        keywords.addAll(['rojo', 'red']);
-      } else if (colorNom.contains('blanco') || colorNom.contains('white') || colorNom.contains('claro')) {
-        keywords.addAll(['blanco', 'white']);
-      } else if (colorNom.contains('verde') || colorNom.contains('green')) {
-        keywords.addAll(['verde', 'green']);
-      } else if (colorNom.contains('gris') || colorNom.contains('gray') || colorNom.contains('grey')) {
-        keywords.addAll(['gris', 'gray', 'grey']);
-      }
-      
-      for (final kw in keywords) {
+      if (colorNom != 'estándar' && colorNom != 'estandar' && colorNom != 'única' && colorNom != 'unica') {
         for (final img in p.imagenes) {
-          if (img.toLowerCase().contains(kw)) {
+          if (img.toLowerCase().contains(colorNom)) {
             return img;
+          }
+        }
+
+        final keywords = <String>[];
+        if (colorNom.contains('negro') || colorNom.contains('black') || colorNom.contains('oscuro')) {
+          keywords.addAll(['negro', 'black', 'dark']);
+        } else if (colorNom.contains('azul') || colorNom.contains('blue') || colorNom.contains('denim')) {
+          keywords.addAll(['azul', 'blue', 'denim']);
+        } else if (colorNom.contains('rojo') || colorNom.contains('red')) {
+          keywords.addAll(['rojo', 'red']);
+        } else if (colorNom.contains('blanco') || colorNom.contains('white') || colorNom.contains('claro')) {
+          keywords.addAll(['blanco', 'white']);
+        } else if (colorNom.contains('verde') || colorNom.contains('green')) {
+          keywords.addAll(['verde', 'green']);
+        } else if (colorNom.contains('gris') || colorNom.contains('gray') || colorNom.contains('grey')) {
+          keywords.addAll(['gris', 'gray', 'grey']);
+        } else if (colorNom.contains('amarillo') || colorNom.contains('yellow')) {
+          keywords.addAll(['amarillo', 'yellow']);
+        } else if (colorNom.contains('rosa') || colorNom.contains('pink') || colorNom.contains('rosado')) {
+          keywords.addAll(['rosa', 'pink', 'rosado']);
+        } else if (colorNom.contains('cafe') || colorNom.contains('café') || colorNom.contains('brown') || colorNom.contains('marron')) {
+          keywords.addAll(['cafe', 'brown', 'marron']);
+        }
+
+        for (final kw in keywords) {
+          for (final img in p.imagenes) {
+            if (img.toLowerCase().contains(kw)) {
+              return img;
+            }
           }
         }
       }
     }
-    
-    // Fallback a imagen principal o primera de la lista
+
+    // 5. Fallback garantizado a imagen principal o primera de la lista
     return p.imagenPrincipal ?? (p.imagenes.isNotEmpty ? p.imagenes.first : '');
   }
 
@@ -102,11 +121,9 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
       setState(() {
         _prenda = p;
         _isLoading = false;
+        _selectedImageOverride = null; // Iniciar sin override para que mande la variante
         if (p != null && p.variantes.isNotEmpty) {
           _selectedVariante = p.variantes.first;
-          if (_selectedVariante!.imagenUrl != null && _selectedVariante!.imagenUrl!.isNotEmpty) {
-            _selectedImageOverride = _selectedVariante!.imagenUrl;
-          }
         }
       });
     }
@@ -322,10 +339,25 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: const Color(0xFFF1F5F9),
-                              child: const Icon(Icons.checkroom, size: 80, color: Color(0xFF94A3B8)),
-                            ),
+                            errorBuilder: (_, __, ___) {
+                              if (p.imagenPrincipal != null && p.imagenPrincipal!.isNotEmpty && currentImg != p.imagenPrincipal) {
+                                return Image.network(
+                                  p.imagenPrincipal!,
+                                  key: ValueKey('fallback_${p.imagenPrincipal}'),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: const Color(0xFFF1F5F9),
+                                    child: const Icon(Icons.checkroom, size: 80, color: Color(0xFF94A3B8)),
+                                  ),
+                                );
+                              }
+                              return Container(
+                                color: const Color(0xFFF1F5F9),
+                                child: const Icon(Icons.checkroom, size: 80, color: Color(0xFF94A3B8)),
+                              );
+                            },
                           ),
                         );
                       }
@@ -338,34 +370,79 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                   Positioned(
                     bottom: 16,
                     left: 16,
+                    right: 16,
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        StockBadge(
-                          estado: _selectedVariante?.estadoStock ?? p.estadoGlobalStock,
-                          unidades: _selectedVariante?.stockDisponible ?? p.stockTotalDisponible,
-                        ),
-                        if (_selectedVariante != null && _selectedVariante!.color != 'Estándar') ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0F172A).withValues(alpha: 0.82),
-                              borderRadius: BorderRadius.circular(16),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            StockBadge(
+                              estado: _selectedVariante?.estadoStock ?? p.estadoGlobalStock,
+                              unidades: _selectedVariante?.stockDisponible ?? p.stockTotalDisponible,
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.palette_outlined, size: 14, color: Colors.white),
-                                const SizedBox(width: 5),
-                                Text(
-                                  _selectedVariante!.color,
-                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                            if (_selectedVariante != null && _selectedVariante!.color != 'Estándar') ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0F172A).withValues(alpha: 0.82),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                              ],
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.palette_outlined, size: 14, color: Colors.white),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      _selectedVariante!.color,
+                                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (_selectedImageOverride != null || (_selectedVariante != null && _getDisplayImageUrl(p) != p.imagenPrincipal))
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedImageOverride = p.imagenPrincipal;
+                                if (p.variantes.isNotEmpty) {
+                                  _selectedVariante = p.variantes.first;
+                                }
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.95),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.undo_rounded, size: 14, color: Color(0xFF0F172A)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Foto Principal',
+                                    style: TextStyle(
+                                      color: Color(0xFF0F172A),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ],
                       ],
                     ),
                   ),
@@ -439,10 +516,44 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
 
                   // Galería de fotos / Colores disponibles
                   if (p.imagenes.length > 1) ...[
-                    const Text('Fotos y Variantes de Color:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Fotos y Variantes de Color:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                        if (_selectedImageOverride != null || (_selectedVariante != null && _getDisplayImageUrl(p) != p.imagenPrincipal))
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedImageOverride = p.imagenPrincipal;
+                                if (p.variantes.isNotEmpty) {
+                                  _selectedVariante = p.variantes.first;
+                                }
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF2FF),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.undo, size: 12, color: Color(0xFF4F46E5)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Volver a principal',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4F46E5)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     SizedBox(
-                      height: 74,
+                      height: 80,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: p.imagenes.length,
@@ -450,6 +561,8 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                         itemBuilder: (ctx, idx) {
                           final imgUrl = p.imagenes[idx];
                           final isCurrent = _getDisplayImageUrl(p) == imgUrl;
+                          final isPrincipal = imgUrl == p.imagenPrincipal;
+
                           return GestureDetector(
                             onTap: () {
                               final vMatch = p.variantes.where((v) => v.imagenUrl == imgUrl);
@@ -461,8 +574,8 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                               });
                             },
                             child: Container(
-                              width: 64,
-                              height: 74,
+                              width: 68,
+                              height: 80,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
@@ -471,12 +584,32 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                                 ),
                               ),
                               clipBehavior: Clip.antiAlias,
-                              child: Image.network(
-                                imgUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Center(
-                                  child: Icon(Icons.broken_image, size: 24, color: Color(0xFF94A3B8)),
-                                ),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.network(
+                                    imgUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Center(
+                                      child: Icon(Icons.broken_image, size: 24, color: Color(0xFF94A3B8)),
+                                    ),
+                                  ),
+                                  if (isPrincipal)
+                                    Positioned(
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      child: Container(
+                                        color: const Color(0xFF0F172A).withValues(alpha: 0.75),
+                                        padding: const EdgeInsets.symmetric(vertical: 2),
+                                        child: const Text(
+                                          'Principal',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           );
@@ -522,9 +655,7 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                               ? null
                               : (_) => setState(() {
                                     _selectedVariante = v;
-                                    if (v.imagenUrl != null && v.imagenUrl!.isNotEmpty) {
-                                      _selectedImageOverride = v.imagenUrl;
-                                    }
+                                    _selectedImageOverride = null; // Limpiar override para que mande el color de la variante
                                   }),
                         );
                       }).toList(),
