@@ -7,6 +7,7 @@ class VariantePrendaModel {
   final String? codBarra;
   final int stockDisponible;
   final String estadoStock; // DISPONIBLE, ULTIMAS_UNIDADES, AGOTADO
+  final String? imagenUrl;
 
   VariantePrendaModel({
     required this.id,
@@ -15,6 +16,7 @@ class VariantePrendaModel {
     this.codBarra,
     required this.stockDisponible,
     required this.estadoStock,
+    this.imagenUrl,
   });
 
   factory VariantePrendaModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class VariantePrendaModel {
     final int parsedStock = rawStock is int ? rawStock : int.tryParse(rawStock?.toString() ?? '0') ?? 0;
 
     final estado = json['estado_disponibilidad'] ?? json['estado_stock'] ?? (parsedStock > 0 ? 'DISPONIBLE' : 'AGOTADO');
+    final rawImg = json['imagen_url']?.toString();
 
     return VariantePrendaModel(
       id: parsedId,
@@ -33,6 +36,7 @@ class VariantePrendaModel {
       codBarra: (json['sku'] ?? json['cod_barra'])?.toString(),
       stockDisponible: parsedStock,
       estadoStock: estado.toString(),
+      imagenUrl: (rawImg != null && rawImg.isNotEmpty) ? Environment.formatImageUrl(rawImg) : null,
     );
   }
 }

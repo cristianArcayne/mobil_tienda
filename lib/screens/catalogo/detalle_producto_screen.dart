@@ -44,7 +44,12 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
   String _getDisplayImageUrl(PrendaModel? p) {
     if (p == null) return '';
     
-    // Si hay una variante seleccionada, buscar coincidencia en las imágenes
+    // 1. Si la variante seleccionada tiene su propia foto subida desde la web, usarla como prioridad absoluta
+    if (_selectedVariante != null && _selectedVariante!.imagenUrl != null && _selectedVariante!.imagenUrl!.isNotEmpty) {
+      return _selectedVariante!.imagenUrl!;
+    }
+    
+    // 2. Si no, buscar coincidencia por color en las imágenes del producto
     if (_selectedVariante != null && p.imagenes.isNotEmpty) {
       final colorNom = _selectedVariante!.color.toLowerCase().trim();
       
