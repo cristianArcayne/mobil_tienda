@@ -41,19 +41,47 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
     _cargarDetalle();
   }
 
-  String _getImageUrl(String base) {
-    if (_selectedVariante != null) {
-      String color = _selectedVariante!.color.toLowerCase();
-      String suffix = '';
-      if (color.contains('negro') || color.contains('black')) suffix = '_negro';
-      else if (color.contains('azul') || color.contains('blue')) suffix = '_azul';
-      else if (color.contains('rojo') || color.contains('red')) suffix = '_rojo';
-      else suffix = '_${color.split(' ')[0]}';
-
-      if (base.endsWith('.jpg')) return base.replaceAll('.jpg', '$suffix.jpg');
-      if (base.endsWith('.png')) return base.replaceAll('.png', '$suffix.png');
+  String _getDisplayImageUrl(PrendaModel? p) {
+    if (p == null) return '';
+    
+    // Si hay una variante seleccionada, buscar coincidencia en las imágenes
+    if (_selectedVariante != null && p.imagenes.isNotEmpty) {
+      final colorNom = _selectedVariante!.color.toLowerCase().trim();
+      
+      // 1. Coincidencia directa por nombre de color en la URL
+      for (final img in p.imagenes) {
+        if (img.toLowerCase().contains(colorNom)) {
+          return img;
+        }
+      }
+      
+      // 2. Coincidencia por términos clave comunes de color
+      final keywords = <String>[];
+      if (colorNom.contains('negro') || colorNom.contains('black') || colorNom.contains('oscuro')) {
+        keywords.addAll(['negro', 'black', 'dark']);
+      } else if (colorNom.contains('azul') || colorNom.contains('blue') || colorNom.contains('denim')) {
+        keywords.addAll(['azul', 'blue', 'denim']);
+      } else if (colorNom.contains('rojo') || colorNom.contains('red')) {
+        keywords.addAll(['rojo', 'red']);
+      } else if (colorNom.contains('blanco') || colorNom.contains('white') || colorNom.contains('claro')) {
+        keywords.addAll(['blanco', 'white']);
+      } else if (colorNom.contains('verde') || colorNom.contains('green')) {
+        keywords.addAll(['verde', 'green']);
+      } else if (colorNom.contains('gris') || colorNom.contains('gray') || colorNom.contains('grey')) {
+        keywords.addAll(['gris', 'gray', 'grey']);
+      }
+      
+      for (final kw in keywords) {
+        for (final img in p.imagenes) {
+          if (img.toLowerCase().contains(kw)) {
+            return img;
+          }
+        }
+      }
     }
-    return base;
+    
+    // Fallback a imagen principal o primera de la lista
+    return p.imagenPrincipal ?? (p.imagenes.isNotEmpty ? p.imagenes.first : '');
   }
 
   Future<void> _cargarDetalle() async {
@@ -268,19 +296,31 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  p.imagenPrincipal != null && p.imagenPrincipal!.isNotEmpty
-                      ? Image.network(
-                          p.imagenPrincipal!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: const Color(0xFFF1F5F9),
-                            child: const Icon(Icons.checkroom, size: 80, color: Color(0xFF94A3B8)),
+                  Builder(
+                    builder: (context) {
+                      final currentImg = _getDisplayImageUrl(p);
+                      if (currentImg.isNotEmpty) {
+                        return AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Image.network(
+                            currentImg,
+                            key: ValueKey(currentImg),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: const Color(0xFFF1F5F9),
+                              child: const Icon(Icons.checkroom, size: 80, color: Color(0xFF94A3B8)),
+                            ),
                           ),
-                        )
-                      : Container(
-                          color: const Color(0xFFF1F5F9),
-                          child: const Icon(Icons.checkroom, size: 80, color: Color(0xFF94A3B8)),
-                        ),
+                        );
+                      }
+                      return Container(
+                        color: const Color(0xFFF1F5F9),
+                        child: const Icon(Icons.checkroom, size: 80, color: Color(0xFF94A3B8)),
+                      );
+                    },
+                  ),
                   Positioned(
                     bottom: 16,
                     left: 16,
@@ -406,10 +446,27 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                       ),
                       onPressed: () {
+                        final imgActual = _getDisplayImageUrl(p);
+                        final prendaConVariante = PrendaModel(
+                          id: p.id,
+                          nombre: _selectedVariante != null ? '${p.nombre} (${_selectedVariante!.color})' : p.nombre,
+                          descripcion: p.descripcion,
+                          precio: p.precio,
+                          precioConDescuento: p.precioConDescuento,
+                          categoriaNombre: p.categoriaNombre,
+                          imagenPrincipal: imgActual,
+                          imagenes: [imgActual, ...p.imagenes.where((img) => img != imgActual)],
+                          modelo3dUri: p.modelo3dUri,
+                          stockTotalDisponible: _selectedVariante?.stockDisponible ?? p.stockTotalDisponible,
+                          estadoGlobalStock: _selectedVariante?.estadoStock ?? p.estadoGlobalStock,
+                          calificacionPromedio: p.calificacionPromedio,
+                          totalResenas: p.totalResenas,
+                          variantes: p.variantes,
+                        );
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => VestidorVirtualScreen(prendaInicial: p),
+                            builder: (_) => VestidorVirtualScreen(prendaInicial: prendaConVariante),
                           ),
                         );
                       },
@@ -432,12 +489,16 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                           .where((c) => c != 'Estándar' && c != 'Única' && c.isNotEmpty)
                           .toSet()
                           .toList();
+                      if (_selectedVariante != null && colores.contains(_selectedVariante!.color)) {
+                        colores.remove(_selectedVariante!.color);
+                        colores.insert(0, _selectedVariante!.color);
+                      }
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => LiveArScreen(
-                            prendaUrl: p.imagenPrincipal ?? '',
-                            prendaNombre: p.nombre,
+                            prendaUrl: _getDisplayImageUrl(p),
+                            prendaNombre: _selectedVariante != null ? '${p.nombre} (${_selectedVariante!.color})' : p.nombre,
                             coloresDisponibles: colores,
                           ),
                         ),

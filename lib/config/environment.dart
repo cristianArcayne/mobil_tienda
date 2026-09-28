@@ -17,8 +17,7 @@ class Environment {
 
     // Por defecto se conecta al backend en la nube en Render
     return 'https://tienda-backend-kvfk.onrender.com';
-  }
-  
+  }         
   // Claves de API para Vestidor Virtual
   static const List<String> decartApiKeys = [
     'dct_tienda-virtual_MFvQCKqLlCmcRVTfIGcoypZXfkiCWGeOrqgzFsbOKpCdEZhgJQERagVnPbbXqQzq',
