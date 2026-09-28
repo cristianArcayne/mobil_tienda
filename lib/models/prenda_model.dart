@@ -97,6 +97,12 @@ class PrendaModel {
       imgUrls.add(imgPrinc);
     }
 
+    for (var v in varsList) {
+      if (v.imagenUrl != null && v.imagenUrl!.isNotEmpty && !imgUrls.contains(v.imagenUrl!)) {
+        imgUrls.add(v.imagenUrl!);
+      }
+    }
+
     // Mapeo robusto de precios (precio_base, precio_minimo, precio)
     final rawPrecio = json['precio_base'] ?? json['precio'] ?? json['precio_minimo'] ?? '0';
     final double parsedPrecio = rawPrecio is num 

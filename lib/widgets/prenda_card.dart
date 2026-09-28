@@ -24,6 +24,7 @@ class PrendaCard extends StatefulWidget {
 }
 
 class _PrendaCardState extends State<PrendaCard> {
+  String? _cardImagePreview;
 
   void _handleIA3DTap(BuildContext context) {
     final auth = Provider.of<AuthService>(context, listen: false);
@@ -128,9 +129,11 @@ class _PrendaCardState extends State<PrendaCard> {
                 children: [
                   Container(
                     color: const Color(0xFFF6F6F6),
-                    child: widget.prenda.imagenPrincipal != null && widget.prenda.imagenPrincipal!.isNotEmpty
+                    child: (_cardImagePreview ?? widget.prenda.imagenPrincipal) != null &&
+                            (_cardImagePreview ?? widget.prenda.imagenPrincipal)!.isNotEmpty
                         ? Image.network(
-                            widget.prenda.imagenPrincipal!,
+                            (_cardImagePreview ?? widget.prenda.imagenPrincipal)!,
+                            key: ValueKey(_cardImagePreview ?? widget.prenda.imagenPrincipal),
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => const Center(
                               child: Icon(Icons.checkroom, size: 40, color: Color(0xFFCBD5E1)),
@@ -319,6 +322,43 @@ class _PrendaCardState extends State<PrendaCard> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                  if (widget.prenda.variantes.any((v) => v.color != 'Estándar' && v.color.isNotEmpty)) ...[
+                    const SizedBox(height: 3),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: widget.prenda.variantes
+                            .where((v) => v.color != 'Estándar' && v.color.isNotEmpty)
+                            .map((v) {
+                          final isSel = (v.imagenUrl != null && _cardImagePreview == v.imagenUrl) ||
+                              (_cardImagePreview == null && v == widget.prenda.variantes.first);
+                          return GestureDetector(
+                            onTap: () {
+                              if (v.imagenUrl != null && v.imagenUrl!.isNotEmpty) {
+                                setState(() => _cardImagePreview = v.imagenUrl);
+                              }
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: isSel ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                v.color,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 8.5,
+                                  fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                                  color: isSel ? Colors.white : const Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 6),
 
                   // Fila Precio + Botón Negro [+]

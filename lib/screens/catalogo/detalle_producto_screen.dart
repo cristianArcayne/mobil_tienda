@@ -33,6 +33,7 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
   PrendaModel? _prenda;
   bool _isLoading = true;
   VariantePrendaModel? _selectedVariante;
+  String? _selectedImageOverride;
   int _cantidad = 1;
 
   @override
@@ -48,8 +49,13 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
     if (_selectedVariante != null && _selectedVariante!.imagenUrl != null && _selectedVariante!.imagenUrl!.isNotEmpty) {
       return _selectedVariante!.imagenUrl!;
     }
+
+    // 2. Si se seleccionó una foto específica de la galería
+    if (_selectedImageOverride != null && _selectedImageOverride!.isNotEmpty) {
+      return _selectedImageOverride!;
+    }
     
-    // 2. Si no, buscar coincidencia por color en las imágenes del producto
+    // 3. Si no, buscar coincidencia por color en las imágenes del producto
     if (_selectedVariante != null && p.imagenes.isNotEmpty) {
       final colorNom = _selectedVariante!.color.toLowerCase().trim();
       
@@ -98,6 +104,9 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
         _isLoading = false;
         if (p != null && p.variantes.isNotEmpty) {
           _selectedVariante = p.variantes.first;
+          if (_selectedVariante!.imagenUrl != null && _selectedVariante!.imagenUrl!.isNotEmpty) {
+            _selectedImageOverride = _selectedVariante!.imagenUrl;
+          }
         }
       });
     }
@@ -329,9 +338,35 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                   Positioned(
                     bottom: 16,
                     left: 16,
-                    child: StockBadge(
-                      estado: _selectedVariante?.estadoStock ?? p.estadoGlobalStock,
-                      unidades: _selectedVariante?.stockDisponible ?? p.stockTotalDisponible,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        StockBadge(
+                          estado: _selectedVariante?.estadoStock ?? p.estadoGlobalStock,
+                          unidades: _selectedVariante?.stockDisponible ?? p.stockTotalDisponible,
+                        ),
+                        if (_selectedVariante != null && _selectedVariante!.color != 'Estándar') ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0F172A).withValues(alpha: 0.82),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.palette_outlined, size: 14, color: Colors.white),
+                                const SizedBox(width: 5),
+                                Text(
+                                  _selectedVariante!.color,
+                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
@@ -402,6 +437,55 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                   ),
                   const Divider(height: 32),
 
+                  // Galería de fotos / Colores disponibles
+                  if (p.imagenes.length > 1) ...[
+                    const Text('Fotos y Variantes de Color:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 74,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: p.imagenes.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (ctx, idx) {
+                          final imgUrl = p.imagenes[idx];
+                          final isCurrent = _getDisplayImageUrl(p) == imgUrl;
+                          return GestureDetector(
+                            onTap: () {
+                              final vMatch = p.variantes.where((v) => v.imagenUrl == imgUrl);
+                              setState(() {
+                                if (vMatch.isNotEmpty) {
+                                  _selectedVariante = vMatch.first;
+                                }
+                                _selectedImageOverride = imgUrl;
+                              });
+                            },
+                            child: Container(
+                              width: 64,
+                              height: 74,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isCurrent ? const Color(0xFF4F46E5) : const Color(0xFFCBD5E1),
+                                  width: isCurrent ? 2.5 : 1,
+                                ),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: Image.network(
+                                imgUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Center(
+                                  child: Icon(Icons.broken_image, size: 24, color: Color(0xFF94A3B8)),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
                   // Variantes (Tallas y Colores)
                   if (p.variantes.isNotEmpty) ...[
                     const Text('Seleccionar Talla y Color:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
@@ -414,6 +498,18 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                         final agotado = v.stockDisponible <= 0;
 
                         return ChoiceChip(
+                          avatar: v.imagenUrl != null && v.imagenUrl!.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.network(
+                                    v.imagenUrl!,
+                                    width: 20,
+                                    height: 20,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.circle, size: 14),
+                                  ),
+                                )
+                              : null,
                           label: Text('${v.talla} • ${v.color} (${v.stockDisponible})'),
                           selected: isSel,
                           selectedColor: const Color(0xFF4F46E5),
@@ -422,7 +518,14 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                             color: isSel ? Colors.white : (agotado ? const Color(0xFF94A3B8) : const Color(0xFF1E293B)),
                             fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                           ),
-                          onSelected: agotado ? null : (_) => setState(() => _selectedVariante = v),
+                          onSelected: agotado
+                              ? null
+                              : (_) => setState(() {
+                                    _selectedVariante = v;
+                                    if (v.imagenUrl != null && v.imagenUrl!.isNotEmpty) {
+                                      _selectedImageOverride = v.imagenUrl;
+                                    }
+                                  }),
                         );
                       }).toList(),
                     ),
