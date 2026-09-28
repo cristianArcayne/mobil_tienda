@@ -137,7 +137,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              'Pasarela de Pagos Stripe',
+                              'Tarjeta de Crédito',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -405,8 +405,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             : const Icon(Icons.lock, color: Colors.white, size: 20),
                         label: Text(
                           procesando
-                              ? 'Procesando con Stripe...'
-                              : 'Pagar Bs. ${montoTotal.toStringAsFixed(2)} con Stripe',
+                              ? 'Procesando pago con tarjeta...'
+                              : 'Pagar Bs. ${montoTotal.toStringAsFixed(2)}',
                           style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.w800,
                             fontSize: 15,
@@ -468,8 +468,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   cart.limpiarCarrito();
                                   InAppNotificationBanner.show(
                                     context,
-                                    title: '¡Pago Exitoso con Stripe! 💳',
-                                    message: 'Tu pago de Bs. ${venta.montoTotal.toStringAsFixed(2)} fue confirmado mediante Stripe.',
+                                    title: '¡Pago Exitoso con Tarjeta! 💳',
+                                    message: 'Tu pago de Bs. ${venta.montoTotal.toStringAsFixed(2)} fue confirmado exitosamente.',
                                     tipo: 'COMPRA',
                                   );
                                   try {
@@ -481,7 +481,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 } else {
                                   setModalState(() {
                                     procesando = false;
-                                    errorStripe = ventasService.errorMessage ?? 'Ocurrió un error al procesar el pago con Stripe.';
+                                    errorStripe = ventasService.errorMessage ?? 'Ocurrió un error al procesar el pago con la tarjeta.';
                                   });
                                 }
                               },
@@ -528,7 +528,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              '¡Pago Exitoso con Stripe!',
+              '¡Pago Exitoso con Tarjeta!',
               style: GoogleFonts.playfairDisplay(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -537,7 +537,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tu pedido #${venta.id} ha sido procesado mediante la pasarela segura Stripe.',
+              'Tu pedido #${venta.id} ha sido procesado mediante tarjeta de crédito exitosamente.',
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppTheme.textSecondary),
             ),
@@ -1122,7 +1122,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 10),
             _buildMetodoPagoOption(
               valor: 'STRIPE',
-              titulo: 'Pasarela de Pagos Stripe',
+              titulo: 'Tarjeta de Crédito',
               subtitulo: 'Visa, Mastercard, AMEX • Tarjeta Débito / Crédito',
               icono: Icons.credit_card,
               badge: 'RECOMENDADO',
@@ -1162,7 +1162,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       )
                     : Text(
                         _metodoPago == 'STRIPE'
-                            ? 'Pagar con Stripe (Bs. ${cart.totalMonto.toStringAsFixed(2)})'
+                            ? 'Pagar con Tarjeta (Bs. ${cart.totalMonto.toStringAsFixed(2)})'
                             : 'Pagar Bs. ${cart.totalMonto.toStringAsFixed(2)}',
                         style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w800,
