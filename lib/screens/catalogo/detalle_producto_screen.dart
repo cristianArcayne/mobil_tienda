@@ -514,43 +514,9 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                   ),
                   const Divider(height: 32),
 
-                  // Galería de fotos / Colores disponibles
+                  // Galera de fotos / Colores disponibles
                   if (p.imagenes.length > 1) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Fotos y Variantes de Color:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                        if (_selectedImageOverride != null || (_selectedVariante != null && _getDisplayImageUrl(p) != p.imagenPrincipal))
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedImageOverride = p.imagenPrincipal;
-                                if (p.variantes.isNotEmpty) {
-                                  _selectedVariante = p.variantes.first;
-                                }
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEEF2FF),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.undo, size: 12, color: Color(0xFF4F46E5)),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Volver a principal',
-                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4F46E5)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
+                    const Text('Fotos y Variantes de Color:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
                     const SizedBox(height: 8),
                     SizedBox(
                       height: 80,

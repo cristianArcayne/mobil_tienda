@@ -58,7 +58,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (_direccionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor ingresa tu dirección de entrega.'),
+          content: Text('Por favor ingresa tu direcciÃ³n de entrega.'),
           backgroundColor: Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
         ),
@@ -137,7 +137,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              'Tarjeta de Crédito',
+                              'Tarjeta de CrÃ©dito',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -154,7 +154,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Paga con tarjeta de débito o crédito de forma segura con cifrado bancario TLS 1.3.',
+                      'Paga con tarjeta de dÃ©bito o crÃ©dito de forma segura con cifrado bancario TLS 1.3.',
                       style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textSecondary),
                     ),
                     const SizedBox(height: 16),
@@ -204,7 +204,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            tarjetaCtrl.text.isNotEmpty ? tarjetaCtrl.text : '•••• •••• •••• ••••',
+                            tarjetaCtrl.text.isNotEmpty ? tarjetaCtrl.text : 'â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢',
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
                               fontSize: 17,
@@ -243,7 +243,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Botón para autorrellenar tarjeta de prueba Stripe
+                    // BotÃ³n para autorrellenar tarjeta de prueba Stripe
                     InkWell(
                       onTap: () {
                         setModalState(() {
@@ -286,7 +286,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     const SizedBox(height: 14),
 
                     // Formulario de Tarjeta
-                    Text('Número de Tarjeta:', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
+                    Text('NÃºmero de Tarjeta:', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 6),
                     TextField(
                       controller: tarjetaCtrl,
@@ -386,7 +386,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       const SizedBox(height: 12),
                     ],
 
-                    // Botón Procesar Pago con Stripe
+                    // BotÃ³n Procesar Pago con Stripe
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -418,11 +418,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             : () async {
                                 final numTarjeta = tarjetaCtrl.text.replaceAll(' ', '').trim();
                                 if (numTarjeta.length < 14) {
-                                  setModalState(() => errorStripe = 'Ingresa un número de tarjeta válido (mínimo 14 dígitos).');
+                                  setModalState(() => errorStripe = 'Ingresa un nÃºmero de tarjeta vÃ¡lido (mÃ­nimo 14 dÃ­gitos).');
                                   return;
                                 }
                                 if (cvcCtrl.text.trim().length < 3) {
-                                  setModalState(() => errorStripe = 'Ingresa un código CVC válido de 3 o 4 dígitos.');
+                                  setModalState(() => errorStripe = 'Ingresa un cÃ³digo CVC vÃ¡lido de 3 o 4 dÃ­gitos.');
                                   return;
                                 }
 
@@ -447,7 +447,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 final intento = await ventasService.crearIntentoPagoStripe(
                                   monto: montoTotal,
                                   clienteId: clienteId,
-                                  descripcion: 'Compra FashionStore Móvil - Titular: ${titularCtrl.text.trim()}',
+                                  descripcion: 'Compra FashionStore MÃ³vil - Titular: ${titularCtrl.text.trim()}',
                                 );
 
                                 final piId = intento?['payment_intent_id'] ?? 'pi_stripe_${DateTime.now().millisecondsSinceEpoch}';
@@ -468,7 +468,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   cart.limpiarCarrito();
                                   InAppNotificationBanner.show(
                                     context,
-                                    title: '¡Pago Exitoso con Tarjeta! 💳',
+                                    title: 'Â¡Pago Exitoso con Tarjeta! ðŸ’³',
                                     message: 'Tu pago de Bs. ${venta.montoTotal.toStringAsFixed(2)} fue confirmado exitosamente.',
                                     tipo: 'COMPRA',
                                   );
@@ -481,7 +481,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 } else {
                                   setModalState(() {
                                     procesando = false;
-                                    errorStripe = ventasService.errorMessage ?? 'Ocurrió un error al procesar el pago con la tarjeta.';
+                                    errorStripe = ventasService.errorMessage ?? 'OcurriÃ³ un error al procesar el pago con la tarjeta.';
                                   });
                                 }
                               },
@@ -494,7 +494,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         const Icon(Icons.verified_user_outlined, size: 14, color: Color(0xFF64748B)),
                         const SizedBox(width: 6),
                         Text(
-                          'Transacción protegida por Stripe Payments Inc. TLS 1.3',
+                          'TransacciÃ³n protegida por Stripe Payments Inc. TLS 1.3',
                           style: GoogleFonts.plusJakartaSans(fontSize: 10, color: const Color(0xFF64748B)),
                         ),
                       ],
@@ -528,7 +528,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              '¡Pago Exitoso con Tarjeta!',
+              'Â¡Pago Exitoso con Tarjeta!',
               style: GoogleFonts.playfairDisplay(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -537,7 +537,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tu pedido #${venta.id} ha sido procesado mediante tarjeta de crédito exitosamente.',
+              'Tu pedido #${venta.id} ha sido procesado mediante tarjeta de crÃ©dito exitosamente.',
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppTheme.textSecondary),
             ),
@@ -642,7 +642,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Navigator.pop(context);
                   },
                   child: Text(
-                    'Volver al Catálogo',
+                    'Volver al CatÃ¡logo',
                     style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
                   ),
                 ),
@@ -686,7 +686,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Escanea el código QR desde tu aplicación bancaria (BNB, BCP, Banco Unión, Mercantil o Bisa).',
+              'Escanea el cÃ³digo QR desde tu aplicaciÃ³n bancaria (BNB, BCP, Banco UniÃ³n, Mercantil o Bisa).',
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textSecondary),
             ),
@@ -758,7 +758,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Botón Confirmar Pago
+            // BotÃ³n Confirmar Pago
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -769,7 +769,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 icon: const Icon(Icons.check_circle_outline, color: Colors.white),
                 label: Text(
-                  'Ya realicé el pago QR',
+                  'Ya realicÃ© el pago QR',
                   style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
@@ -816,7 +816,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       cart.limpiarCarrito();
       InAppNotificationBanner.show(
         context,
-        title: '¡Compra Exitosa! 🛍️',
+        title: 'Â¡Compra Exitosa! ðŸ›ï¸',
         message: 'Tu pedido #${venta.id} por Bs. ${venta.montoTotal.toStringAsFixed(2)} ha sido procesado correctamente.',
         tipo: 'COMPRA',
       );
@@ -841,7 +841,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                '¡Compra Exitosa!',
+                'Â¡Compra Exitosa!',
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
@@ -850,7 +850,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Tu pedido #${venta.id} ha sido procesado y registrado con éxito.',
+                'Tu pedido #${venta.id} ha sido procesado y registrado con Ã©xito.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppTheme.textSecondary),
               ),
@@ -889,7 +889,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Método:', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textMuted)),
+                        Text('MÃ©todo:', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textMuted)),
                         Text(
                           _metodoPago == 'QR_SIMPLE' ? 'QR Simple' : _metodoPago,
                           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.textPrimary),
@@ -918,7 +918,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
                     ),
                     onPressed: () {
-                      Navigator.pop(ctx); // Cerrar diálogo
+                      Navigator.pop(ctx); // Cerrar diÃ¡logo
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (_) => DetalleCompraScreen(venta: venta)),
@@ -936,11 +936,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 11),
                     ),
                     onPressed: () {
-                      Navigator.pop(ctx); // Cerrar diálogo
-                      Navigator.pop(context); // Volver al catálogo/inicio
+                      Navigator.pop(ctx); // Cerrar diÃ¡logo
+                      Navigator.pop(context); // Volver al catÃ¡logo/inicio
                     },
                     child: Text(
-                      'Volver al Catálogo',
+                      'Volver al CatÃ¡logo',
                       style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
                     ),
                   ),
@@ -1050,9 +1050,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Dirección y Datos de Envío
+            // DirecciÃ³n y Datos de EnvÃ­o
             Text(
-              'DATOS DE ENTREGA Y FACTURACIÓN',
+              'DATOS DE ENTREGA Y FACTURACIÃ“N',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -1073,7 +1073,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   TextField(
                     controller: _direccionController,
                     decoration: InputDecoration(
-                      labelText: 'Dirección de Envío a Domicilio',
+                      labelText: 'DirecciÃ³n de EnvÃ­o a Domicilio',
                       prefixIcon: const Icon(Icons.location_on_outlined, size: 20),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -1085,7 +1085,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         child: TextField(
                           controller: _nombreController,
                           decoration: InputDecoration(
-                            labelText: 'Razón Social / Nombre',
+                            labelText: 'RazÃ³n Social / Nombre',
                             prefixIcon: const Icon(Icons.person_outline, size: 20),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
@@ -1109,9 +1109,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Métodos de Pago
+            // MÃ©todos de Pago
             Text(
-              'MÉTODO DE PAGO DIGITAL',
+              'MÃ‰TODO DE PAGO DIGITAL',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -1123,15 +1123,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             _buildMetodoPagoOption(
               valor: 'STRIPE',
               titulo: 'Tarjeta de Crédito',
-              subtitulo: 'Visa, Mastercard, AMEX • Tarjeta Débito / Crédito',
+              subtitulo: '',
               icono: Icons.credit_card,
               badge: 'RECOMENDADO',
             ),
             const SizedBox(height: 8),
             _buildMetodoPagoOption(
               valor: 'QR_SIMPLE',
-              titulo: 'Pago Rápido QR Simple',
-              subtitulo: 'Bancos de Bolivia (BNB, BCP, Banco Unión, Bisa)',
+              titulo: 'Pago RÃ¡pido QR Simple',
+              subtitulo: 'Bancos de Bolivia (BNB, BCP, Banco UniÃ³n, Bisa)',
               icono: Icons.qr_code_2,
             ),
             const SizedBox(height: 8),
@@ -1143,7 +1143,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 32),
 
-            // Botón Pagar
+            // BotÃ³n Pagar
             SizedBox(
               width: double.infinity,
               height: 54,
@@ -1284,3 +1284,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 }
+
+
+
