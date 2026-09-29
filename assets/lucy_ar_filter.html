@@ -11,20 +11,66 @@
         
         #loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; z-index: 10; background: rgba(0,0,0,0.6); padding: 20px; border-radius: 10px; }
         
-        /* Camera switch button */
-        #cam-switch { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5); color: white; border: 2px solid white; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; z-index: 30; display: flex; align-items: center; justify-content: center; }
-        #back-switch { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.5); color: white; border: 2px solid white; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; z-index: 30; display: flex; align-items: center; justify-content: center; }
+        /* Botones de acción superiores modernos con efecto Glassmorphic */
+        .top-action-btn {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            color: #ffffff;
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            cursor: pointer;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
 
-        /* Color Controls Overlay */
-        .controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 15px 25px; border-radius: 40px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.4); z-index: 40; }
-        .color-btn { width: 35px; height: 35px; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.4); transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .color-btn:hover { transform: scale(1.2); box-shadow: 0 6px 12px rgba(0,0,0,0.6); }
-        .color-btn:active { transform: scale(0.9); }
+        .top-action-btn:hover {
+            background: rgba(15, 23, 42, 0.85);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: scale(1.05);
+        }
+
+        .top-action-btn:active {
+            transform: scale(0.92);
+            background: rgba(79, 70, 229, 0.85);
+        }
+
+        #back-switch {
+            top: 26px;
+            left: 20px;
+        }
+
+        #cam-switch {
+            top: 26px;
+            right: 20px;
+        }
+
+        /* Ocultar barra de tonos de colores inferior */
+        .controls {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
-    <button id="back-switch" onclick="if(window.flutter_inappwebview){window.flutter_inappwebview.callHandler('goBack');}else{window.parent.postMessage('goBack', '*');}">⬅️</button>
-    <button id="cam-switch" onclick="toggleCamera()">🔄</button>
+    <button id="back-switch" class="top-action-btn" title="Regresar" onclick="if(window.flutter_inappwebview){window.flutter_inappwebview.callHandler('goBack');}else{window.parent.postMessage('goBack', '*');}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+    </button>
+    <button id="cam-switch" class="top-action-btn" title="Girar Cámara" onclick="toggleCamera()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 1.956.702 3.748 1.87 5.143L4 17h5v-5l-1.802 1.802A5.965 5.965 0 0 1 6 10c0-3.314 2.686-6 6-6s6 2.686 6 6c0 1.657-.672 3.157-1.758 4.243l1.414 1.414A7.962 7.962 0 0 0 20 10z"/>
+        </svg>
+    </button>
     <div id="loader">
         <h3>Conectando a Vestidor Virtual IA...</h3>
         <p>Iniciando...</p>
@@ -198,16 +244,7 @@
                 loader.style.display = 'none';
 
                 if (availableColors.length > 0) {
-                    colorControls.innerHTML = '';
-                    availableColors.forEach(color => {
-                        const btn = document.createElement('div');
-                        btn.className = 'color-btn';
-                        btn.style.backgroundColor = getHexForColor(color);
-                        btn.title = color;
-                        btn.onclick = () => window.changeColor(color);
-                        colorControls.appendChild(btn);
-                    });
-                    colorControls.style.display = 'flex';
+                    colorControls.style.display = 'none';
                 }
 
                 window.addEventListener('beforeunload', () => {
