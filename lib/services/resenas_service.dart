@@ -16,10 +16,18 @@ class ResenasService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await ApiClient.get(
-        '${Environment.resenas}/ropa/$ropaId',
-        requireAuth: false,
-      );
+      dynamic response;
+      try {
+        response = await ApiClient.get(
+          '${Environment.resenas}/ropa/$ropaId/',
+          requireAuth: false,
+        );
+      } catch (_) {
+        response = await ApiClient.get(
+          '${Environment.resenas}/ropa/$ropaId',
+          requireAuth: false,
+        );
+      }
 
       if (response is List) {
         _resenas = response.map((json) => ResenaModel.fromJson(json as Map<String, dynamic>)).toList();
@@ -29,7 +37,8 @@ class ResenasService extends ChangeNotifier {
       } else {
         _resenas = [];
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Error cargando reseñas: $e');
       _resenas = [];
     }
 
@@ -61,16 +70,26 @@ class ResenasService extends ChangeNotifier {
         payload['cliente_nombre'] = clienteNombre;
       }
 
-      final response = await ApiClient.post(
-        Environment.resenas,
-        payload,
-      );
+      dynamic response;
+      try {
+        response = await ApiClient.post(
+          '${Environment.resenas}/',
+          payload,
+        );
+      } catch (_) {
+        response = await ApiClient.post(
+          Environment.resenas,
+          payload,
+        );
+      }
 
       if (response != null) {
         await cargarResenasPrenda(ropaId);
         return true;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Error creando reseña: $e');
+    }
     return false;
   }
 }

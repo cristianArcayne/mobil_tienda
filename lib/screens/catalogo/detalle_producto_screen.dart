@@ -126,6 +126,7 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
           _selectedVariante = p.variantes.first;
         }
       });
+      Provider.of<ResenasService>(context, listen: false).cargarResenasPrenda(widget.prendaId);
     }
   }
 
@@ -807,6 +808,61 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 12),
+                        Consumer<ResenasService>(
+                          builder: (context, resenasServ, _) {
+                            if (resenasServ.isLoading) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+                              );
+                            }
+                            if (resenasServ.resenas.isEmpty) {
+                              return const Padding(
+                                padding: EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'Aún no hay opiniones escritas. ¡Sé el primero en calificar esta prenda!',
+                                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontStyle: FontStyle.italic),
+                                ),
+                              );
+                            }
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Divider(height: 20),
+                                const Text('Últimas opiniones:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF334155))),
+                                const SizedBox(height: 8),
+                                ...resenasServ.resenas.take(3).map((r) => Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(r.clienteNombre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B))),
+                                          RatingStars(rating: r.calificacion.toDouble(), size: 14),
+                                        ],
+                                      ),
+                                      if (r.comentario != null && r.comentario!.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(r.comentario!, style: const TextStyle(fontSize: 12, color: Color(0xFF475569))),
+                                      ],
+                                      const SizedBox(height: 4),
+                                      Text(r.fecha, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                                    ],
+                                  ),
+                                )),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),

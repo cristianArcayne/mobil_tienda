@@ -140,7 +140,6 @@ class VentasService extends ChangeNotifier {
       return null;
     }
   }
-
   // Confirmar Pago con Stripe y emitir orden fiscal
   Future<VentaModel?> confirmarPagoStripe({
     required String paymentIntentId,

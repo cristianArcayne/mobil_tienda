@@ -22,9 +22,12 @@ class ResenaModel {
       clienteNombre: json['cliente_nombre']?.toString() ?? 'Cliente FashionStore',
       calificacion: json['calificacion'] is int 
           ? json['calificacion'] 
-          : int.tryParse(json['calificacion'].toString()) ?? 5,
+          : int.tryParse(json['calificacion']?.toString() ?? '') ?? 
+            (json['puntuacion_estrellas'] is int 
+                ? json['puntuacion_estrellas'] 
+                : int.tryParse(json['puntuacion_estrellas']?.toString() ?? '') ?? 5),
       comentario: json['comentario']?.toString(),
-      fecha: json['fecha']?.toString() ?? '',
+      fecha: json['fecha']?.toString() ?? json['fecha_creacion']?.toString() ?? '',
     );
   }
 }
