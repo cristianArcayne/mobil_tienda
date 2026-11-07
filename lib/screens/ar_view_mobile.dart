@@ -4,15 +4,25 @@ import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-Widget buildArView(String prendaUrl, List<String> coloresDisponibles) {
-  return MobileArView(prendaUrl: prendaUrl, coloresDisponibles: coloresDisponibles);
+Widget buildArView(String prendaUrl, List<String> coloresDisponibles, [String? prendaNombre]) {
+  return MobileArView(
+    prendaUrl: prendaUrl,
+    coloresDisponibles: coloresDisponibles,
+    prendaNombre: prendaNombre ?? 'Camiseta básica de algodón celeste',
+  );
 }
 
 class MobileArView extends StatefulWidget {
   final String prendaUrl;
   final List<String> coloresDisponibles;
+  final String prendaNombre;
   
-  const MobileArView({Key? key, required this.prendaUrl, required this.coloresDisponibles}) : super(key: key);
+  const MobileArView({
+    Key? key,
+    required this.prendaUrl,
+    required this.coloresDisponibles,
+    required this.prendaNombre,
+  }) : super(key: key);
 
   @override
   State<MobileArView> createState() => _MobileArViewState();
@@ -62,7 +72,7 @@ class _MobileArViewState extends State<MobileArView> {
     
     final baseUrl = 'http://127.0.0.1:8080/assets/lucy_ar_filter.html';
     final colorsStr = widget.coloresDisponibles.join(',');
-    final url = '$baseUrl?garment=${widget.prendaUrl}&colors=$colorsStr';
+    final url = '$baseUrl?garment=${widget.prendaUrl}&name=${Uri.encodeComponent(widget.prendaNombre)}&colors=$colorsStr';
     
     setState(() {
       _serverUrl = url;
@@ -111,7 +121,7 @@ class _MobileArViewState extends State<MobileArView> {
             });
           },
           onConsoleMessage: (controller, consoleMessage) {
-            debugPrint("AR-LOG: \${consoleMessage.message}");
+            debugPrint("AR-LOG: ${consoleMessage.message}");
           },
         ),
         if (_isLoading)

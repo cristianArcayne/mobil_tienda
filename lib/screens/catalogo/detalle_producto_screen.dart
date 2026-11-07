@@ -681,14 +681,19 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
 
                   const SizedBox(height: 10),
 
-                  // Botón Secundario: Probar en Vivo (Cámara AR Tiempo Real)
+                  // Botón Secundario: Probar en Vivo (Cámara AR Tiempo Real / Probador Virtual)
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(44),
+                      minimumSize: const Size.fromHeight(48),
+                      side: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      backgroundColor: const Color(0xFFEEF2FF),
                     ),
-                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                    label: const Text('Probar en Vivo (Cámara AR Tiempo Real)'),
+                    icon: const Icon(Icons.videocam_rounded, color: Color(0xFF4F46E5), size: 20),
+                    label: const Text(
+                      'Probador Virtual (Cámara en Vivo 15s)',
+                      style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF4F46E5)),
+                    ),
                     onPressed: () {
                       List<String> colores = p.variantes
                           .map((v) => v.color)

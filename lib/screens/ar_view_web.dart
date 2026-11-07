@@ -3,14 +3,15 @@ import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
 
-Widget buildArView(String prendaUrl, List<String> coloresDisponibles) {
+Widget buildArView(String prendaUrl, List<String> coloresDisponibles, [String? prendaNombre]) {
   final viewId = 'lucy-ar-view-${DateTime.now().millisecondsSinceEpoch}';
+  final nom = prendaNombre ?? 'Camiseta básica de algodón celeste';
   
   ui_web.platformViewRegistry.registerViewFactory(viewId, (int id) {
     final iframe = html.IFrameElement()
       ..width = '100%'
       ..height = '100%'
-      ..src = 'assets/assets/lucy_ar_filter.html?garment=' + Uri.encodeComponent(prendaUrl) + '&colors=' + Uri.encodeComponent(coloresDisponibles.join(','))
+      ..src = 'assets/assets/lucy_ar_filter.html?garment=${Uri.encodeComponent(prendaUrl)}&name=${Uri.encodeComponent(nom)}&colors=${Uri.encodeComponent(coloresDisponibles.join(','))}'
       ..style.border = 'none'
       ..allow = 'camera; microphone';
     return iframe;
@@ -18,7 +19,6 @@ Widget buildArView(String prendaUrl, List<String> coloresDisponibles) {
 
   html.window.onMessage.listen((event) {
     if (event.data == 'goBack') {
-      // Usar Navigator no es directo aquǭ sin BuildContext, pero este es un hack para web.
       html.window.history.back();
     }
   });

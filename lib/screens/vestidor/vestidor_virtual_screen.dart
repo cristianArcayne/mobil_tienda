@@ -8,6 +8,7 @@ import '../../config/environment.dart';
 import '../../models/prenda_model.dart';
 import '../../services/vestidor_service.dart';
 import '../../services/catalogo_service.dart';
+import '../live_ar_screen.dart';
 
 class VestidorVirtualScreen extends StatefulWidget {
   final PrendaModel? prendaInicial;
@@ -355,6 +356,31 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vestidor Virtual Google IA Cloud'),
+        actions: [
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF4F46E5),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            icon: const Icon(Icons.videocam_rounded, size: 20),
+            label: const Text('Cámara 15s', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            onPressed: () {
+              final prenda = _prendaSeleccionada;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LiveArScreen(
+                    prendaUrl: prenda?.imagenPrincipal != null
+                        ? Environment.formatImageUrl(prenda!.imagenPrincipal!)
+                        : 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500',
+                    prendaNombre: prenda?.nombre ?? 'Camiseta básica de algodón celeste',
+                    coloresDisponibles: const ['Azul', 'Blanco', 'Negro'],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: vestidor.isLoading
           ? Center(

@@ -36,16 +36,21 @@ class _LiveArScreenState extends State<LiveArScreen> {
       setState(() {
         _hasPermissions = true;
       });
+    } else {
+      // En Web los permisos se solicitan directo por el navegador
+      setState(() {
+        _hasPermissions = true;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0F172A),
       body: _hasPermissions 
-          ? buildArView(widget.prendaUrl, widget.coloresDisponibles)
-          : const Center(child: CircularProgressIndicator(color: Colors.green)),
+          ? buildArView(widget.prendaUrl, widget.coloresDisponibles, widget.prendaNombre)
+          : const Center(child: CircularProgressIndicator(color: Color(0xFF4F46E5))),
     );
   }
 }
