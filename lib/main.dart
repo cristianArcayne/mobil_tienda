@@ -21,10 +21,15 @@ import 'config/environment.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Cargar host personalizado si fue configurado previamente
+  // Cargar host configurado o migrar hacia Render por defecto
   final savedHost = await StorageService.getServerHost();
   if (savedHost != null && savedHost.isNotEmpty) {
-    Environment.setCustomHost(savedHost);
+    if (savedHost.contains('192.168.') || savedHost.contains('127.0.0.1') || savedHost.contains('localhost')) {
+      await StorageService.saveServerHost(Environment.defaultProductionUrl);
+      Environment.setCustomHost(Environment.defaultProductionUrl);
+    } else {
+      Environment.setCustomHost(savedHost);
+    }
   }
 
   // Instanciar servicios con aislamiento estricto por usuario
