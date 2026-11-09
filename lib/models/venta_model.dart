@@ -75,6 +75,19 @@ class VentaModel {
 
   String get fechaFormateada => formatFechaLimpia(fecha);
 
+  // ============================================================================
+  // CASOS DE USO CU-10 y CU-11: Ventas Digitales Stripe y Cobros QR Simple
+  // Identifica el metodo de pago aplicado y calcula la cantidad total de prendas
+  // adquiridas para trazabilidad fiscal y control de garantias a 7 dias (CU-12).
+  // ============================================================================
+  bool get esPagoQR => metodoPago?.toLowerCase().contains('qr') ?? false;
+  bool get esPagoStripe =>
+      (metodoPago?.toLowerCase().contains('stripe') ?? false) ||
+      (metodoPago?.toLowerCase().contains('tarjeta') ?? false);
+  bool get estaCompletada =>
+      estado == 'COMPLETADA' || estado == 'PAGADO' || estado == 'PAGADA';
+  int get cantidadTotalPrendas => detalles.fold(0, (sum, d) => sum + d.cantidad);
+
   factory VentaModel.fromJson(Map<String, dynamic> json) {
     var rawDetalles = json['detalles'] as List? ?? [];
     String? nroFactura = json['numero_factura']?.toString();
