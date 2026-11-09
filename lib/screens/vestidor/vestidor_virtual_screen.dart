@@ -357,24 +357,22 @@ class _VestidorVirtualScreenState extends State<VestidorVirtualScreen> {
       appBar: AppBar(
         title: const Text('Vestidor Virtual Google IA Cloud'),
         actions: [
-          TextButton.icon(
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF4F46E5),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-            icon: const Icon(Icons.videocam_rounded, size: 20),
-            label: const Text('Cámara 15s', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          IconButton(
+            icon: const Icon(Icons.camera_front_rounded),
+            tooltip: 'Probador Virtual (Cámara)',
             onPressed: () {
-              final prenda = _prendaSeleccionada;
+              final prenda = _prendaSeleccionada ?? (catalogo.prendas.isNotEmpty ? catalogo.prendas.first : null);
+              String prendaImg = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500';
+              if (prenda != null && prenda.imagenPrincipal != null && prenda.imagenPrincipal!.isNotEmpty) {
+                final img = prenda.imagenPrincipal!;
+                prendaImg = img.startsWith('http') ? img : '${Environment.baseUrl}$img';
+              }
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => LiveArScreen(
-                    prendaUrl: prenda?.imagenPrincipal != null
-                        ? Environment.formatImageUrl(prenda!.imagenPrincipal!)
-                        : 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500',
-                    prendaNombre: prenda?.nombre ?? 'Camiseta básica de algodón celeste',
-                    coloresDisponibles: const ['Azul', 'Blanco', 'Negro'],
+                    prendaUrl: prendaImg,
+                    prendaNombre: prenda?.nombre ?? 'Prenda de Colección',
                   ),
                 ),
               );

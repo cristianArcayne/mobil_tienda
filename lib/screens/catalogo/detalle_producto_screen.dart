@@ -11,6 +11,7 @@ import '../../widgets/stock_badge.dart';
 import '../resenas/resenas_list_screen.dart';
 import '../vestidor/vestidor_virtual_screen.dart';
 import '../live_ar_screen.dart';
+import '../../config/environment.dart';
 
 import '../reservas/crear_reserva_screen.dart';
 
@@ -681,19 +682,14 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
 
                   const SizedBox(height: 10),
 
-                  // Botón Secundario: Probar en Vivo (Cámara AR Tiempo Real / Probador Virtual)
+                  // Botón Secundario: Probar en Vivo (Cámara AR Tiempo Real)
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                      side: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
+                      minimumSize: const Size.fromHeight(44),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      backgroundColor: const Color(0xFFEEF2FF),
                     ),
-                    icon: const Icon(Icons.videocam_rounded, color: Color(0xFF4F46E5), size: 20),
-                    label: const Text(
-                      'Probador Virtual (Cámara en Vivo 15s)',
-                      style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF4F46E5)),
-                    ),
+                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                    label: const Text('Probar en Vivo (Cámara AR Tiempo Real)'),
                     onPressed: () {
                       List<String> colores = p.variantes
                           .map((v) => v.color)
@@ -704,11 +700,19 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                         colores.remove(_selectedVariante!.color);
                         colores.insert(0, _selectedVariante!.color);
                       }
+                      String prendaUrlFinal = _getDisplayImageUrl(p);
+                      if ((prendaUrlFinal.isEmpty || prendaUrlFinal.contains('variante_')) && p.imagenPrincipal != null && p.imagenPrincipal!.isNotEmpty) {
+                        prendaUrlFinal = p.imagenPrincipal!;
+                      }
+                      if (!prendaUrlFinal.startsWith('http') && prendaUrlFinal.isNotEmpty) {
+                        prendaUrlFinal = '${Environment.baseUrl}$prendaUrlFinal';
+                      }
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => LiveArScreen(
-                            prendaUrl: _getDisplayImageUrl(p),
+                            prendaUrl: prendaUrlFinal,
                             prendaNombre: _selectedVariante != null ? '${p.nombre} (${_selectedVariante!.color})' : p.nombre,
                             coloresDisponibles: colores,
                           ),

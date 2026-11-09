@@ -3,27 +3,27 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Probador Virtual con Cámara en Vivo</title>
+    <title>Probador Virtual con Lucy AR</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            background: #0f172a; font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #0b1120; font-family: 'Plus Jakarta Sans', sans-serif;
             overflow: hidden; display: flex; align-items: center; justify-content: center;
         }
 
-        /* Modal Probador Virtual (Estilo Móvil) */
+        /* Modal Probador Virtual (Diseño idéntico a la app móvil) */
         .probador-modal {
             width: 100%;
-            max-width: 460px;
+            max-width: 440px;
             height: 100%;
-            max-height: 940px;
+            max-height: 920px;
             background: #0a0f1d;
             display: flex;
             flex-direction: column;
             position: relative;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
             border-radius: 24px;
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -47,10 +47,10 @@
         }
 
         .scanner-icon-box {
-            width: 40px;
-            height: 40px;
+            width: 38px;
+            height: 38px;
             border-radius: 12px;
-            background: #eff6ff;
+            background: #f1f5f9;
             color: #4f46e5;
             display: flex;
             align-items: center;
@@ -71,13 +71,13 @@
         }
 
         .header-subtitle {
-            font-size: 12.5px;
+            font-size: 13px;
             color: #64748b;
-            margin-top: 2px;
+            margin-top: 3px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 260px;
+            max-width: 250px;
             font-weight: 500;
         }
 
@@ -100,36 +100,41 @@
             color: #0f172a;
         }
 
-        /* 2. Cuerpo Central Oscuro (Cámara y AR) */
+        /* 2. Cuerpo Central Oscuro (Cámara en Vivo + Lucy VTON AR) */
         .modal-body {
             flex: 1;
             position: relative;
-            background: #0a0f1d;
+            background: #070b14;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        /* Video de la cámara en vivo */
-        #camera-video {
+        /* VIDEO PRINCIPAL DE FONDO (Lucy VTON Try-On / Cámara en vivo) */
+        #output {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
-            position: absolute;
-            top: 0; left: 0;
-            transform: scaleX(-1); /* Efecto espejo para selfie */
+            transform: scaleX(-1); /* Espejo natural selfie */
             z-index: 1;
+            background: #070b14;
         }
 
-        #camera-video.back-camera {
+        #output.back-camera {
             transform: scaleX(1);
         }
 
-        /* Superposición AR de la Prenda */
+        /* CAPA AR DE SUPERPOSICIÓN DE LA PRENDA SOBRE EL CUERPO */
         .ar-overlay-layer {
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             z-index: 5;
             pointer-events: none;
             display: flex;
@@ -138,21 +143,39 @@
         }
 
         .ar-garment-img {
-            max-width: 68%;
-            max-height: 56%;
+            max-width: 70%;
+            max-height: 60%;
             object-fit: contain;
             margin-top: 14%;
-            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.6));
-            animation: breathing 4s ease-in-out infinite;
+            filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.75));
+            animation: softBreathing 4s ease-in-out infinite;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        @keyframes breathing {
+        @keyframes softBreathing {
             0%, 100% { transform: translateY(0px) scale(1); }
             50% { transform: translateY(-4px) scale(1.02); }
         }
 
-        /* Badge Prenda de Referencia */
+        /* Línea biométrica de escaneo */
+        .scanning-laser-line {
+            position: absolute;
+            left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, #4f46e5, #38bdf8, #10b981, transparent);
+            box-shadow: 0 0 14px #38bdf8;
+            z-index: 7;
+            pointer-events: none;
+            animation: laserScan 3.5s ease-in-out infinite;
+        }
+
+        @keyframes laserScan {
+            0% { top: 12%; opacity: 0; }
+            20% { opacity: 0.9; }
+            80% { opacity: 0.9; }
+            100% { top: 88%; opacity: 0; }
+        }
+
+        /* Badge Superior: Prenda de referencia */
         .prenda-ref-pill {
             position: absolute;
             top: 16px;
@@ -160,7 +183,7 @@
             z-index: 20;
             background: rgba(15, 23, 42, 0.75);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 30px;
             padding: 5px 14px 5px 6px;
             display: flex;
@@ -169,7 +192,7 @@
             color: #ffffff;
             font-size: 12.5px;
             font-weight: 600;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
 
         .prenda-ref-thumb {
@@ -181,18 +204,50 @@
             background: #ffffff;
         }
 
-        /* Botón Cambiar Cámara (Selfie / Trasera) */
-        .btn-toggle-cam {
+        /* Badge Estado IA */
+        .ai-status-pill {
             position: absolute;
             top: 16px;
+            right: 64px;
+            z-index: 20;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 20px;
+            padding: 5px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #38bdf8;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .ai-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulseDot 1.5s infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.5; }
+        }
+
+        /* Botón Cambiar Cámara (Girar) */
+        .btn-toggle-cam {
+            position: absolute;
+            top: 14px;
             right: 16px;
             z-index: 20;
             background: rgba(15, 23, 42, 0.75);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             color: #ffffff;
-            width: 40px;
-            height: 40px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
@@ -207,127 +262,129 @@
             transform: scale(1.08);
         }
 
-        /* Ventana PIP (Picture in Picture) en esquina inferior derecha */
-        .pip-preview-box {
+        /* 3. "ESA PEQUEÑITA DE LA CÁMARA" (Ventana PIP en esquina inferior derecha) */
+        .camera-pip-window {
             position: absolute;
             bottom: 20px;
             right: 20px;
-            width: 90px;
-            height: 120px;
+            width: 115px;
+            height: 155px;
             border-radius: 14px;
             background: #000000;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            z-index: 20;
+            border: 2px solid rgba(255, 255, 255, 0.95);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+            z-index: 25;
             overflow: hidden;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease;
         }
 
-        .pip-thumb-img {
+        .camera-pip-window:hover {
+            transform: scale(1.04);
+            border-color: #38bdf8;
+        }
+
+        /* Video de la cámara local / selfie en la ventanita PIP */
+        #input {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transform: scaleX(-1); /* Espejo natural selfie */
+            background: #000;
         }
 
-        .pip-badge {
+        #input.back-camera {
+            transform: scaleX(1);
+        }
+
+        /* Barra de estado en la ventanita PIP */
+        .pip-header-bar {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .pip-live-badge {
+            background: rgba(239, 68, 68, 0.9);
+            color: #ffffff;
+            font-size: 8px;
+            font-weight: 800;
+            padding: 2px 5px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .pip-live-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #ffffff;
+            animation: blink 1.2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .pip-caption {
             position: absolute;
             bottom: 4px;
-            background: rgba(0,0,0,0.7);
-            color: #38bdf8;
-            font-size: 9px;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 6px;
-            letter-spacing: 0.5px;
+            left: 4px;
+            right: 4px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.65);
+            color: #ffffff;
+            font-size: 8.5px;
+            font-weight: 700;
+            padding: 2px;
+            border-radius: 4px;
+            letter-spacing: 0.3px;
         }
 
-        /* Línea de escaneo láser biométrica */
-        .scanning-laser-line {
+        /* Mensaje de Inicialización / Carga */
+        .loading-camera-box {
             position: absolute;
-            left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, transparent, #4f46e5, #06b6d4, #10b981, transparent);
-            box-shadow: 0 0 12px #38bdf8;
-            z-index: 6;
-            animation: scanMove 3s ease-in-out infinite;
-        }
-
-        @keyframes scanMove {
-            0% { top: 15%; opacity: 0; }
-            30% { opacity: 0.8; }
-            70% { opacity: 0.8; }
-            100% { top: 85%; opacity: 0; }
-        }
-
-        /* Overlay de sesión finalizada tras 15s */
-        .session-finished-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 15, 29, 0.9);
-            backdrop-filter: blur(8px);
-            z-index: 25;
+            z-index: 10;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .finished-icon-circle {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 16px;
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
             color: white;
+            text-align: center;
+            gap: 10px;
+            background: rgba(10, 15, 29, 0.85);
+            padding: 16px 24px;
+            border-radius: 16px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
-        .finished-title {
-            color: #ffffff;
-            font-size: 20px;
-            font-weight: 800;
-            margin: 0 0 6px 0;
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid rgba(255, 255, 255, 0.25);
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
 
-        .finished-desc {
-            color: #94a3b8;
-            font-size: 13.5px;
-            margin: 0 0 20px 0;
-            line-height: 1.5;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        .finished-actions {
-            display: flex;
-            gap: 12px;
-            width: 100%;
-        }
-
-        .btn-restart-test {
-            flex: 1;
-            background: #4f46e5;
-            color: #ffffff;
-            border: none;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 13.5px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-restart-test:hover {
-            background: #4338ca;
-            transform: translateY(-1px);
-        }
-
-        /* 3. Footer Blanco */
+        /* 4. Footer Blanco con Botón Cerrar */
         .modal-footer {
             background: #ffffff;
             padding: 16px 20px 20px;
@@ -336,48 +393,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
         }
 
-        /* Texto y Barra de Temporizador (15 segundos) */
-        .timer-info-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            font-size: 13px;
-            color: #475569;
-            font-weight: 600;
-        }
-
-        .timer-badge-count {
-            background: #f1f5f9;
-            color: #4f46e5;
-            font-family: monospace;
-            font-weight: 800;
-            font-size: 13px;
-            padding: 3px 8px;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-        }
-
-        .timer-progress-track {
-            width: 100%;
-            height: 6px;
-            background: #e2e8f0;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-bottom: 2px;
-        }
-
-        .timer-progress-fill {
-            height: 100%;
-            width: 100%;
-            background: linear-gradient(90deg, #4f46e5, #06b6d4, #10b981);
-            transition: width 1s linear;
-        }
-
-        /* Botón Cerrar (Negro / Azul marino de ancho completo) */
         .btn-close-main {
             width: 100%;
             height: 48px;
@@ -404,42 +421,17 @@
         .btn-close-main:active {
             transform: translateY(0);
         }
-
-        /* Mensaje de Carga / Inicialización */
-        .loading-camera-box {
-            position: absolute;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: white;
-            text-align: center;
-            gap: 12px;
-        }
-
-        .spinner {
-            width: 36px;
-            height: 36px;
-            border: 3.5px solid rgba(255, 255, 255, 0.2);
-            border-top-color: #4f46e5;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
     </style>
 </head>
 <body>
 
     <div class="probador-modal">
         
-        <!-- HEADER SUPERIOR -->
+        <!-- HEADER SUPERIOR BLANCO -->
         <div class="modal-header">
             <div class="header-left">
                 <div class="scanner-icon-box">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
                         <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
                         <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
@@ -463,13 +455,18 @@
             </button>
         </div>
 
-        <!-- CUERPO CENTRAL OSCURO CON CÁMARA EN VIVO -->
+        <!-- CUERPO CENTRAL OSCURO: CÁMARA + LUCY VTON AR -->
         <div class="modal-body">
             
-            <!-- Video en vivo de la cámara -->
-            <video id="camera-video" autoplay playsinline muted></video>
+            <!-- VIDEO PRINCIPAL DE FONDO (Lucy VTON Try-On / Cámara en vivo) -->
+            <video id="output" autoplay playsinline></video>
 
-            <!-- Línea biométrica de escaneo láser -->
+            <!-- Capa AR: La prenda adaptada sobre el cuerpo -->
+            <div id="ar-overlay" class="ar-overlay-layer">
+                <img id="ar-garment-target" src="" alt="Prenda AR" class="ar-garment-img" />
+            </div>
+
+            <!-- Línea biométrica láser -->
             <div class="scanning-laser-line"></div>
 
             <!-- Prenda de referencia flotante arriba a la izquierda -->
@@ -478,101 +475,145 @@
                 <span>Prenda de referencia</span>
             </div>
 
+            <!-- Badge estado Lucy AI -->
+            <div class="ai-status-pill">
+                <span class="ai-status-dot"></span>
+                <span id="status-text">Lucy AR en Vivo</span>
+            </div>
+
             <!-- Botón Cambiar Cámara (Girar) -->
             <button class="btn-toggle-cam" title="Girar Cámara" onclick="cambiarCamara()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 1.956.702 3.748 1.87 5.143L4 17h5v-5l-1.802 1.802A5.965 5.965 0 0 1 6 10c0-3.314 2.686-6 6-6s6 2.686 6 6c0 1.657-.672 3.157-1.758 4.243l1.414 1.414A7.962 7.962 0 0 0 20 10z"/>
                 </svg>
             </button>
 
-            <!-- Capa AR con la Prenda Superpuesta sobre el usuario -->
-            <div class="ar-overlay-layer">
-                <img id="ar-garment-target" src="" alt="Prenda AR" class="ar-garment-img" />
+            <!-- VENTANA PEQUEÑA DE LA CÁMARA (PIP Abajo a la Derecha) -->
+            <div class="camera-pip-window" title="Toca para intercambiar vista" onclick="intercambiarVistas()">
+                <video id="input" autoplay playsinline muted></video>
+
+                <div class="pip-header-bar">
+                    <div class="pip-live-badge">
+                        <span class="pip-live-dot"></span>
+                        <span id="pip-label">CAM</span>
+                    </div>
+                </div>
+
+                <div class="pip-caption">Tu Cámara</div>
             </div>
 
-            <!-- Mini PIP (Picture in Picture) abajo a la derecha -->
-            <div class="pip-preview-box">
-                <img id="pip-thumbnail" src="" alt="PIP Prenda" class="pip-thumb-img" />
-                <span class="pip-badge">PIP 3D</span>
-            </div>
-
-            <!-- Estado de Carga de Cámara -->
+            <!-- Estado de Carga Inicial -->
             <div id="camera-loading" class="loading-camera-box">
                 <div class="spinner"></div>
-                <p style="margin: 0; font-size: 13.5px; font-weight: 600;">Iniciando cámara en vivo...</p>
-            </div>
-
-            <!-- Overlay cuando expiran los 15 segundos -->
-            <div id="finished-overlay" class="session-finished-overlay" style="display: none;">
-                <div class="finished-icon-circle">
-                    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                </div>
-                <h3 class="finished-title">¡Prueba de 15s Completada!</h3>
-                <p class="finished-desc">Has probado virtualmente la prenda sobre tu cámara con ajuste fotométrico en tiempo real.</p>
-                <div class="finished-actions">
-                    <button class="btn-restart-test" onclick="iniciarTemporizador15s()">Probar de nuevo (15s)</button>
-                </div>
+                <p id="loading-msg" style="margin: 0; font-size: 13.5px; font-weight: 600;">Iniciando cámara y Lucy AR...</p>
             </div>
 
         </div>
 
-        <!-- FOOTER INFERIOR -->
+        <!-- FOOTER INFERIOR BLANCO (Sin temporizador de 15s) -->
         <div class="modal-footer">
-            
-            <!-- Barra de temporizador 15 segundos -->
-            <div class="timer-info-row">
-                <span>La prueba dura 15s y se corta sola.</span>
-                <span id="countdown-badge" class="timer-badge-count">15s</span>
-            </div>
-
-            <div class="timer-progress-track">
-                <div id="timer-progress-bar" class="timer-progress-fill"></div>
-            </div>
-
-            <!-- Botón Cerrar -->
             <button class="btn-close-main" onclick="cerrarProbador()">
                 Cerrar
             </button>
-
         </div>
 
     </div>
 
-    <script>
-        let currentStream = null;
+    <!-- Módulo JS para Lucy VTON Realtime + WebRTC Fallback -->
+    <script type="module">
+        import { createDecartClient, models } from 'https://esm.sh/@decartai/sdk';
+
+        let session = null;
+        let localStream = null;
         let currentFacingMode = "user";
-        let tiempoRestante = 15;
-        let timerInterval = null;
-        let garmentUrl = "";
+        let baseGarmentUrl = "";
         let garmentName = "";
+        let globalGarmentBase64 = "";
+        let isSwapped = false;
 
-        // Obtener parámetros de la URL enviados desde Flutter
-        function cargarParametros() {
-            const params = new URLSearchParams(window.location.search);
-            garmentUrl = params.get('garment') || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500';
-            garmentName = params.get('name') || 'Camiseta básica de algodón celeste';
+        const decartApiKeys = [
+            "dct_tienda-virtual_MFvQCKqLlCmcRVTfIGcoypZXfkiCWGeOrqgzFsbOKpCdEZhgJQERagVnPbbXqQzq",
+            "dct_si2-parcial_qOCBWVtsCDmnrhLMjaIYMTjRJMnTqIOvtoCrcHWOepoDKFWkVSfgFowaeMznUrJw"
+        ];
 
-            // Actualizar textos e imágenes
-            document.getElementById('prenda-subtitle').innerText = garmentName;
-            document.getElementById('ref-thumbnail').src = garmentUrl;
-            document.getElementById('pip-thumbnail').src = garmentUrl;
-            document.getElementById('ar-garment-target').src = garmentUrl;
+        function getFallbackImage(name, url) {
+            const clean = ((name || '') + ' ' + (url || '')).toLowerCase();
+            if (clean.includes('denim') || clean.includes('chaqueta')) {
+                return 'https://tienda-backend-kvfk.onrender.com/static/uploads/chaqueta_denim_clasica.jpg';
+            } else if (clean.includes('chamarra') || clean.includes('racco')) {
+                return 'https://tienda-backend-kvfk.onrender.com/static/uploads/chamarra_racco_negra.png';
+            } else if (clean.includes('polera') || clean.includes('cat')) {
+                return 'https://tienda-backend-kvfk.onrender.com/static/uploads/polera_cat_gris.png';
+            } else if (clean.includes('jean') || clean.includes('pantalon') || clean.includes('slim')) {
+                return 'https://tienda-backend-kvfk.onrender.com/static/uploads/jean_slim_azul.jpg';
+            } else if (clean.includes('chompa')) {
+                return 'https://tienda-backend-kvfk.onrender.com/static/uploads/chompa_azul_marino.jpg';
+            }
+            return 'https://tienda-backend-kvfk.onrender.com/static/uploads/chaqueta_denim_clasica.jpg';
         }
 
-        // Encender la cámara real del dispositivo (Webcam o Smartphone)
-        async function iniciarCamara() {
-            const loadingBox = document.getElementById('camera-loading');
-            loadingBox.style.display = 'flex';
+        // 1. Cargar parámetros de la URL
+        async function cargarParametros() {
+            const params = new URLSearchParams(window.location.search);
+            garmentName = params.get('name') || 'Chaqueta Denim Vintage';
+            let rawUrl = params.get('garment') || '';
 
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
+            // Si viene una variante rota (ej: variante_2_be8f0db3.png) o vacía, usar la imagen del catálogo verificada
+            if (!rawUrl || rawUrl.includes('variante_')) {
+                baseGarmentUrl = getFallbackImage(garmentName, rawUrl);
+            } else {
+                baseGarmentUrl = rawUrl;
             }
 
-            const video = document.getElementById('camera-video');
+            document.getElementById('prenda-subtitle').innerText = garmentName;
+
+            const refThumb = document.getElementById('ref-thumbnail');
+            const arTarget = document.getElementById('ar-garment-target');
+
+            refThumb.onerror = () => {
+                refThumb.onerror = null;
+                refThumb.src = getFallbackImage(garmentName, baseGarmentUrl);
+            };
+
+            arTarget.onerror = () => {
+                arTarget.onerror = null;
+                const fallback = getFallbackImage(garmentName, baseGarmentUrl);
+                arTarget.src = fallback;
+                globalGarmentBase64 = fallback;
+            };
+
+            refThumb.src = baseGarmentUrl;
+            arTarget.src = baseGarmentUrl;
+
+            // Convertir prenda a Base64 para Lucy VTON
+            globalGarmentBase64 = baseGarmentUrl;
+            try {
+                const res = await fetch(baseGarmentUrl);
+                if (res.ok) {
+                    const blob = await res.blob();
+                    globalGarmentBase64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+                }
+            } catch(e) {
+                console.warn("Base64 fetch fallback:", e);
+            }
+        }
+
+        // 2. Iniciar Cámara y Conexión Lucy VTON
+        async function iniciarProbador() {
+            await cargarParametros();
+            const inputVideo = document.getElementById('input');
+            const outputVideo = document.getElementById('output');
+            const loadingBox = document.getElementById('camera-loading');
+            const loadingMsg = document.getElementById('loading-msg');
+            const statusText = document.getElementById('status-text');
+            const arOverlay = document.getElementById('ar-overlay');
 
             try {
+                // Obtener stream de la cámara del usuario
                 const constraints = {
                     video: {
                         facingMode: currentFacingMode,
@@ -582,75 +623,122 @@
                     audio: false
                 };
 
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = currentStream;
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // Conectar stream a la ventanita pequeña (PIP) de la cámara
+                inputVideo.srcObject = localStream;
+                await inputVideo.play();
 
-                video.onloadedmetadata = () => {
-                    video.play();
-                    loadingBox.style.display = 'none';
-                    iniciarTemporizador15s();
-                };
-            } catch (err) {
-                console.warn("No se pudo acceder a la cámara:", err);
-                loadingBox.innerHTML = `
-                    <p style="color: #f87171; font-weight: 700; margin-bottom: 4px;">⚠️ Permiso de cámara no concedido</p>
-                    <p style="font-size: 12px; color: #94a3b8; max-width: 240px;">Habilite el acceso a la cámara en el navegador para la prueba en vivo.</p>
-                `;
-                // Iniciar de todos modos el temporizador de 15 segundos para la simulación
-                iniciarTemporizador15s();
-            }
-        }
+                // Conectar temporalmente el stream de fondo para vista inmediata
+                outputVideo.srcObject = localStream;
+                await outputVideo.play();
 
-        // Alternar entre cámara frontal y trasera
-        function cambiarCamara() {
-            currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
-            const video = document.getElementById('camera-video');
-            if (currentFacingMode === "user") {
-                video.classList.remove('back-camera');
-            } else {
-                video.classList.add('back-camera');
-            }
-            iniciarCamara();
-        }
+                // Ocultar modal de carga inmediatamente para no bloquear la experiencia
+                loadingBox.style.display = 'none';
 
-        // Temporizador estricto de 15 segundos (La prueba dura 15s y se corta sola)
-        function iniciarTemporizador15s() {
-            clearInterval(timerInterval);
-            tiempoRestante = 15;
-            document.getElementById('finished-overlay').style.display = 'none';
-
-            const badge = document.getElementById('countdown-badge');
-            const progress = document.getElementById('timer-progress-bar');
-            
-            badge.innerText = '15s';
-            progress.style.transition = 'width 1s linear';
-            progress.style.width = '100%';
-
-            timerInterval = setInterval(() => {
-                tiempoRestante--;
-                badge.innerText = `${tiempoRestante}s`;
-                const porcentaje = (tiempoRestante / 15) * 100;
-                progress.style.width = `${porcentaje}%`;
-
-                if (tiempoRestante <= 0) {
-                    clearInterval(timerInterval);
-                    finalizarPrueba15s();
+                // Intentar conectar con el servicio Lucy VTON (Decart AI)
+                let connected = false;
+                for (let i = 0; i < decartApiKeys.length; i++) {
+                    const key = decartApiKeys[i];
+                    loadingMsg.innerText = `Conectando con Lucy VTON (${i + 1}/${decartApiKeys.length})...`;
+                    try {
+                        const client = createDecartClient({ apiKey: key });
+                        session = await client.realtime.connect(localStream, {
+                            model: models.realtime("lucy-vton-3.5"),
+                            onRemoteStream: (transformedStream) => {
+                                console.log("¡Stream transformado por Lucy VTON recibido!");
+                                outputVideo.srcObject = transformedStream;
+                                outputVideo.play();
+                                // La IA ya coloca la ropa directamente en el cuerpo en el stream
+                                arOverlay.style.display = 'none';
+                                statusText.innerText = 'Lucy VTON Activo';
+                            },
+                            initialState: {
+                                image: globalGarmentBase64,
+                                referenceImage: globalGarmentBase64,
+                                prompt: { text: "virtual try on this clothing", image: globalGarmentBase64 }
+                            }
+                        });
+                        connected = true;
+                        console.log(`[Lucy VTON] Conectado exitosamente con clave #${i + 1}`);
+                        break;
+                    } catch (e) {
+                        console.warn(`[Lucy VTON] Clave #${i + 1} no disponible o límite alcanzado:`, e);
+                    }
                 }
-            }, 1000);
+
+                if (!connected) {
+                    console.log("[Lucy VTON] Modo AR Óptico Directo activo sobre el cuerpo.");
+                    statusText.innerText = 'Probador AR Directo';
+                    arOverlay.style.display = 'flex';
+                }
+
+            } catch (err) {
+                console.error("Error al iniciar cámara:", err);
+                loadingBox.innerHTML = `
+                    <p style="color: #f87171; font-weight: 700; margin: 0;">Error de acceso a cámara</p>
+                    <p style="color: #94a3b8; font-size: 12px; margin: 4px 0 0 0;">Verifica los permisos en tu navegador</p>
+                `;
+            }
         }
 
-        // Acción al agotarse los 15 segundos
-        function finalizarPrueba15s() {
-            document.getElementById('finished-overlay').style.display = 'flex';
-            const badge = document.getElementById('countdown-badge');
-            badge.innerText = '0s';
-            document.getElementById('timer-progress-bar').style.width = '0%';
-        }
+        // 3. Alternar entre cámara frontal y trasera
+        window.cambiarCamara = async function() {
+            currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+            const inputVideo = document.getElementById('input');
+            const outputVideo = document.getElementById('output');
 
-        // Cerrar y retornar a la vista de Flutter
-        function cerrarProbador() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
+            if (currentFacingMode === "user") {
+                inputVideo.classList.remove('back-camera');
+                outputVideo.classList.remove('back-camera');
+            } else {
+                inputVideo.classList.add('back-camera');
+                outputVideo.classList.add('back-camera');
+            }
+
+            if (session && session.disconnect) {
+                session.disconnect();
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+
+            document.getElementById('camera-loading').style.display = 'flex';
+            setTimeout(() => {
+                iniciarProbador();
+            }, 300);
+        };
+
+        // 4. Intercambiar vistas entre pantalla principal y ventanita PIP
+        window.intercambiarVistas = function() {
+            const inputVideo = document.getElementById('input');
+            const outputVideo = document.getElementById('output');
+            const pipLabel = document.getElementById('pip-label');
+            const arOverlay = document.getElementById('ar-overlay');
+
+            isSwapped = !isSwapped;
+            const tempStream = inputVideo.srcObject;
+            inputVideo.srcObject = outputVideo.srcObject;
+            outputVideo.srcObject = tempStream;
+
+            if (isSwapped) {
+                pipLabel.innerText = 'AR';
+                arOverlay.style.display = 'none';
+            } else {
+                pipLabel.innerText = 'CAM';
+                if (!session) {
+                    arOverlay.style.display = 'flex';
+                }
+            }
+        };
+
+        // 5. Cerrar probador
+        window.cerrarProbador = function() {
+            if (session && session.disconnect) {
+                try { session.disconnect(); } catch(e){}
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
             }
             if (window.flutter_inappwebview) {
                 window.flutter_inappwebview.callHandler('goBack');
@@ -659,18 +747,18 @@
             } else {
                 window.history.back();
             }
-        }
+        };
 
         window.addEventListener('beforeunload', () => {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
+            if (session && session.disconnect) {
+                try { session.disconnect(); } catch(e){}
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
             }
         });
 
-        window.onload = () => {
-            cargarParametros();
-            iniciarCamara();
-        };
+        window.onload = iniciarProbador;
     </script>
 </body>
 </html>
