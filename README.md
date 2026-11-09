@@ -1,3 +1,15 @@
+# FashionStore SaaS — Aplicación Móvil Flutter (WebXR / Offline)
+> **Sistemas de Información II (SI2) — Segundo Parcial**  
+> **Universidad Autónoma Gabriel René Moreno (UAGRM)**  
+> **Docente:** MSc. Ing. Angélica Garzón Cuéllar | **Estudiante:** Yeison Choque León  
+
+### 🔗 Ecosistema de Repositorios Oficiales:
+- 🖥️ **Backend & Documentación Completa:** [https://github.com/yeisonCL/SI2Parcial-2-Backend](https://github.com/yeisonCL/SI2Parcial-2-Backend)
+- 🌐 **Frontend Web Angular:** [https://github.com/yeisonCL/SI2Parcial-2-Frontend](https://github.com/yeisonCL/SI2Parcial-2-Frontend)
+- 📱 **App Móvil (Este Repositorio):** [https://github.com/yeisonCL/SI2Parcial-2-Mobile](https://github.com/yeisonCL/SI2Parcial-2-Mobile)
+
+---
+
 # 📱 FashionStore Móvil (Flutter)
 
 Aplicación móvil oficial para la plataforma **FashionStore**, desarrollada en Flutter con arquitectura modular y conectada directamente a los endpoints de la API REST en FastAPI.
