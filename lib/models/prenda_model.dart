@@ -47,6 +47,7 @@ class PrendaModel {
   final String descripcion;
   final double precio;
   final double? precioConDescuento;
+  final int? categoriaId;
   final String? categoriaNombre;
   final String? imagenPrincipal;
   final List<String> imagenes;
@@ -63,6 +64,7 @@ class PrendaModel {
     required this.descripcion,
     required this.precio,
     this.precioConDescuento,
+    this.categoriaId,
     this.categoriaNombre,
     this.imagenPrincipal,
     required this.imagenes,
@@ -126,6 +128,11 @@ class PrendaModel {
     final estado = json['estado_global_stock']?.toString() ?? 
         (json['disponible_en_cadena'] == false || parsedStock <= 0 ? 'AGOTADO' : (parsedStock <= 5 ? 'ULTIMAS_UNIDADES' : 'DISPONIBLE'));
 
+    final rawCatId = json['categoria_id'] ?? (json['categoria'] is Map ? json['categoria']['id'] : null);
+    final int? parsedCatId = rawCatId != null
+        ? (rawCatId is int ? rawCatId : int.tryParse(rawCatId.toString()))
+        : null;
+
     final rawId = json['ropa_id'] ?? json['id'] ?? 0;
     final int parsedId = rawId is int ? rawId : int.tryParse(rawId.toString()) ?? 0;
 
@@ -135,7 +142,8 @@ class PrendaModel {
       descripcion: json['descripcion']?.toString() ?? json['motivo_sugerencia']?.toString() ?? '',
       precio: parsedPrecio,
       precioConDescuento: parsedPromo,
-      categoriaNombre: json['categoria_nombre']?.toString() ?? json['categoria']?.toString(),
+      categoriaId: parsedCatId,
+      categoriaNombre: json['categoria_nombre']?.toString() ?? (json['categoria'] is String ? json['categoria'] : null),
       imagenPrincipal: imgPrinc,
       imagenes: imgUrls,
       modelo3dUri: json['modelo_3d_uri'] != null ? Environment.formatImageUrl(json['modelo_3d_uri'].toString()) : null,
