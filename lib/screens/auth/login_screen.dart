@@ -5,7 +5,6 @@ import '../../config/theme.dart';
 import '../../core/storage_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/ventas_service.dart';
-import '../../services/carrito_service.dart';
 import '../../services/reservas_service.dart';
 import '../../services/favoritos_service.dart';
 import '../home/main_navigation_screen.dart';
@@ -66,13 +65,11 @@ class _LoginScreenState extends State<LoginScreen> {
         final clienteId = u?.username.isNotEmpty == true ? u!.username : u?.id.toString();
         Provider.of<VentasService>(context, listen: false).limpiarEstado();
         Provider.of<ReservasService>(context, listen: false).limpiarEstado();
-        Provider.of<CarritoService>(context, listen: false).limpiarCarrito();
         Provider.of<FavoritosService>(context, listen: false).limpiarFavoritos();
 
         Provider.of<ReservasService>(context, listen: false).cargarReservas(clienteId: clienteId);
         Provider.of<VentasService>(context, listen: false).cargarHistorialCompras(clienteId: clienteId);
-        Provider.of<CarritoService>(context, listen: false).cargarCarrito();
-        Provider.of<FavoritosService>(context, listen: false).cargarFavoritos();
+        Provider.of<FavoritosService>(context, listen: false).cargarFavoritos(usuarioId: clienteId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -529,11 +526,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textSecondary),
                     ),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        final nuevoUsuario = await Navigator.push<String>(
                           context,
                           MaterialPageRoute(builder: (_) => const RegistroScreen()),
                         );
+                        if (nuevoUsuario != null && nuevoUsuario.isNotEmpty && mounted) {
+                          setState(() {
+                            _userController.text = nuevoUsuario;
+                            _passController.clear();
+                          });
+                        }
                       },
                       child: Text(
                         'Solicitar Acceso',

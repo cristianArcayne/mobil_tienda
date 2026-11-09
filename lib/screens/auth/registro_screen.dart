@@ -49,29 +49,26 @@ class _RegistroScreenState extends State<RegistroScreen> {
       );
 
       if (ok && mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text(
-              '¡Membresía Creada!',
-              style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.w700),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '¡Cuenta creada exitosamente para ${_userController.text.trim()}! Ya puedes iniciar sesión.',
+                    style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+                  ),
+                ),
+              ],
             ),
-            content: const Text(
-              'Su cuenta ha sido creada exitosamente. Ya puede iniciar sesión para disfrutar de todos los beneficios exclusivos.',
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  Navigator.pop(context);
-                },
-                child: const Text('INGRESAR A MI CUENTA'),
-              ),
-            ],
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
           ),
         );
+        Navigator.pop(context, _userController.text.trim());
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

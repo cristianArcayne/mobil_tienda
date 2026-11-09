@@ -5,8 +5,9 @@ class StorageService {
   static const String _keyAccessToken = 'fs_access_token';
   static const String _keyRefreshToken = 'fs_refresh_token';
   static const String _keyUserData = 'fs_user_data';
-  static const String _keyOfflineCart = 'fs_offline_cart';
+  static const String _keyOfflineCartPrefix = 'fs_offline_cart_u_';
   static const String _keyClienteId = 'fs_cliente_id';
+  static const String _keyTenantId = 'fs_tenant_id';
   static const String _keyServerHost = 'fs_server_host';
   static const String _keyRememberMe = 'fs_remember_me';
   static const String _keySavedUsername = 'fs_saved_username';
@@ -44,6 +45,17 @@ class StorageService {
     return prefs.getString(_keyServerHost);
   }
 
+  // Guardar Tenant / Empresa ID (RN-05 Multitenancy)
+  static Future<void> saveTenantId(String tenantId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyTenantId, tenantId);
+  }
+
+  static Future<String> getTenantId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyTenantId) ?? '1';
+  }
+
   // Guardar token JWT
   static Future<void> saveTokens({required String access, String? refresh}) async {
     final prefs = await SharedPreferences.getInstance();
@@ -69,8 +81,13 @@ class StorageService {
   static Future<void> saveUser(Map<String, dynamic> user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyUserData, jsonEncode(user));
-    if (user.containsKey('cliente_id')) {
-      await prefs.setString(_keyClienteId, user['cliente_id'].toString());
+    final cid = user['username'] ?? user['nombre_usuario'] ?? user['cliente_id'] ?? user['id'];
+    if (cid != null && cid.toString().trim().isNotEmpty) {
+      await prefs.setString(_keyClienteId, cid.toString().trim());
+    }
+    final empId = user['empresa_id'] ?? user['tenant_id'];
+    if (empId != null) {
+      await prefs.setString(_keyTenantId, empId.toString());
     }
   }
 
@@ -88,21 +105,41 @@ class StorageService {
     return null;
   }
 
+  /// Obtiene el identificador único del usuario actual sin fallback estático a '1'
   static Future<String?> getClienteId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_keyClienteId) ?? '1'; // Default fallback cliente
+    final saved = prefs.getString(_keyClienteId);
+    if (saved != null && saved.trim().isNotEmpty) {
+      return saved.trim();
+    }
+    final user = await getUser();
+    if (user != null) {
+      final uname = user['username']?.toString();
+      if (uname != null && uname.isNotEmpty) return uname;
+      final uid = user['id']?.toString();
+      if (uid != null && uid.isNotEmpty && uid != '0') return uid;
+    }
+    return null;
   }
 
-  // Guardar carrito offline local
-  static Future<void> saveOfflineCart(List<Map<String, dynamic>> items) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyOfflineCart, jsonEncode(items));
+  /// Obtiene una clave de usuario aislada para almacenamiento local
+  static Future<String> getActiveUserKey() async {
+    final cid = await getClienteId();
+    return (cid != null && cid.isNotEmpty) ? cid : 'guest';
   }
 
-  // Obtener carrito offline
-  static Future<List<Map<String, dynamic>>> getOfflineCart() async {
+  // Guardar carrito offline local aislado por usuario
+  static Future<void> saveOfflineCart(List<Map<String, dynamic>> items, {String? userKey}) async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_keyOfflineCart);
+    final uk = userKey ?? await getActiveUserKey();
+    await prefs.setString('$_keyOfflineCartPrefix$uk', jsonEncode(items));
+  }
+
+  // Obtener carrito offline aislado por usuario
+  static Future<List<Map<String, dynamic>>> getOfflineCart({String? userKey}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final uk = userKey ?? await getActiveUserKey();
+    final data = prefs.getString('$_keyOfflineCartPrefix$uk');
     if (data != null) {
       try {
         final list = jsonDecode(data) as List;
@@ -114,15 +151,15 @@ class StorageService {
     return [];
   }
 
-  // Cerrar sesión
+  // Cerrar sesión limpiando únicamente la sesión activa
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyAccessToken);
     await prefs.remove(_keyRefreshToken);
     await prefs.remove(_keyUserData);
-    await prefs.remove(_keyOfflineCart);
     await prefs.remove(_keyClienteId);
+    // Eliminar llaves globales heredadas antiguas para evitar contaminación entre cuentas
+    await prefs.remove('fs_offline_cart');
     await prefs.remove('fs_favoritos_prendas');
   }
 }
-

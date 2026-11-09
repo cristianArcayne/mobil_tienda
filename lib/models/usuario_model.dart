@@ -8,6 +8,7 @@ class UsuarioModel {
   final String? direccion;
   final int? clienteId;
   final String? rol;
+  final int empresaId;
 
   UsuarioModel({
     required this.id,
@@ -19,13 +20,25 @@ class UsuarioModel {
     this.direccion,
     this.clienteId,
     this.rol,
+    this.empresaId = 1,
   });
 
   String get nombreCompleto {
-    if (nombre != null && apellido != null) {
-      return '$nombre $apellido';
+    if (nombre != null && apellido != null && nombre!.isNotEmpty) {
+      return '$nombre $apellido'.trim();
     }
-    return nombre ?? username;
+    if (nombre != null && nombre!.isNotEmpty) {
+      return nombre!;
+    }
+    return username;
+  }
+
+  /// Identificador único para aislar compras, reservas, carrito y favoritos por usuario
+  String get identificadorUnico {
+    if (username.trim().isNotEmpty) return username.trim();
+    if (clienteId != null && clienteId! > 0) return clienteId.toString();
+    if (email.trim().isNotEmpty) return email.trim();
+    return id.toString();
   }
 
   factory UsuarioModel.fromJson(Map<String, dynamic> json) {
@@ -37,16 +50,20 @@ class UsuarioModel {
       parsedRol = (json['roles'] as List).first.toString();
     }
 
+    final rawEmp = json['empresa_id'] ?? json['tenant_id'] ?? 1;
+    final int parsedEmp = rawEmp is int ? rawEmp : int.tryParse(rawEmp.toString()) ?? 1;
+
     return UsuarioModel(
       id: parsedId,
-      username: json['username'] ?? '',
-      email: json['email'] ?? '',
-      nombre: json['nombre'],
-      apellido: json['apellido'],
-      telefono: json['telefono'],
-      direccion: json['direccion'],
+      username: json['username']?.toString() ?? json['nombre_usuario']?.toString() ?? '',
+      email: json['email']?.toString() ?? json['correo']?.toString() ?? '',
+      nombre: json['nombre']?.toString(),
+      apellido: (json['apellido'] ?? json['apellido_pat'])?.toString(),
+      telefono: json['telefono']?.toString(),
+      direccion: json['direccion']?.toString(),
       clienteId: json['cliente_id'] != null ? int.tryParse(json['cliente_id'].toString()) : null,
       rol: parsedRol ?? 'Cliente',
+      empresaId: parsedEmp,
     );
   }
 
@@ -61,7 +78,7 @@ class UsuarioModel {
       'direccion': direccion,
       'cliente_id': clienteId,
       'rol': rol,
+      'empresa_id': empresaId,
     };
   }
 }
-

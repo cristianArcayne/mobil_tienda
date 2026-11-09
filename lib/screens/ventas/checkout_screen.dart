@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -58,7 +60,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (_direccionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor ingresa tu direcciÃ³n de entrega.'),
+          content: Text('Por favor ingresa tu dirección de entrega.'),
           backgroundColor: Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
         ),
@@ -137,7 +139,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              'Tarjeta de CrÃ©dito',
+                              'Tarjeta de Crédito',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -154,7 +156,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Paga con tarjeta de dÃ©bito o crÃ©dito de forma segura con cifrado bancario TLS 1.3.',
+                      'Paga con tarjeta de débito o crédito de forma segura con cifrado bancario TLS 1.3.',
                       style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textSecondary),
                     ),
                     const SizedBox(height: 16),
@@ -204,7 +206,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                           const SizedBox(height: 18),
                           Text(
-                            tarjetaCtrl.text.isNotEmpty ? tarjetaCtrl.text : 'â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢',
+                            tarjetaCtrl.text.isNotEmpty ? tarjetaCtrl.text : '•••• •••• •••• ••••',
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
                               fontSize: 17,
@@ -243,7 +245,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // BotÃ³n para autorrellenar tarjeta de prueba Stripe
+                    // Botón para autorrellenar tarjeta de prueba Stripe
                     InkWell(
                       onTap: () {
                         setModalState(() {
@@ -286,7 +288,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     const SizedBox(height: 14),
 
                     // Formulario de Tarjeta
-                    Text('NÃºmero de Tarjeta:', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
+                    Text('Número de Tarjeta:', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 6),
                     TextField(
                       controller: tarjetaCtrl,
@@ -386,7 +388,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       const SizedBox(height: 12),
                     ],
 
-                    // BotÃ³n Procesar Pago con Stripe
+                    // Botón Procesar Pago con Stripe
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -418,11 +420,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             : () async {
                                 final numTarjeta = tarjetaCtrl.text.replaceAll(' ', '').trim();
                                 if (numTarjeta.length < 14) {
-                                  setModalState(() => errorStripe = 'Ingresa un nÃºmero de tarjeta vÃ¡lido (mÃ­nimo 14 dÃ­gitos).');
+                                  setModalState(() => errorStripe = 'Ingresa un número de tarjeta válido (mínimo 14 dígitos).');
                                   return;
                                 }
                                 if (cvcCtrl.text.trim().length < 3) {
-                                  setModalState(() => errorStripe = 'Ingresa un cÃ³digo CVC vÃ¡lido de 3 o 4 dÃ­gitos.');
+                                  setModalState(() => errorStripe = 'Ingresa un código CVC válido de 3 o 4 dígitos.');
                                   return;
                                 }
 
@@ -435,10 +437,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 final ventasService = Provider.of<VentasService>(context, listen: false);
                                 final auth = Provider.of<AuthService>(context, listen: false);
                                 final user = auth.currentUser;
-                                final clienteId = user?.username.isNotEmpty == true ? user!.username : user?.id.toString();
+                                final clienteId = user?.identificadorUnico;
 
                                 final items = cart.items.map((i) => {
                                   'variante_id': i.varianteId,
+                                  'ropa_id': i.prendaId,
+                                  'prenda_nombre': i.prendaNombre,
+                                  'talla': i.talla,
+                                  'color': i.color,
                                   'cantidad': i.cantidad,
                                   'precio_unitario': i.precioUnitario,
                                 }).toList();
@@ -447,7 +453,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 final intento = await ventasService.crearIntentoPagoStripe(
                                   monto: montoTotal,
                                   clienteId: clienteId,
-                                  descripcion: 'Compra FashionStore MÃ³vil - Titular: ${titularCtrl.text.trim()}',
+                                  descripcion: 'Compra FashionStore Móvil - Titular: ${titularCtrl.text.trim()}',
                                 );
 
                                 final piId = intento?['payment_intent_id'] ?? 'pi_stripe_${DateTime.now().millisecondsSinceEpoch}';
@@ -466,10 +472,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 if (venta != null && context.mounted) {
                                   Navigator.pop(modalCtx);
                                   cart.limpiarCarrito();
+                                  final fueOffline = ventasService.ultimaVentaFueOffline;
                                   InAppNotificationBanner.show(
                                     context,
-                                    title: 'Â¡Pago Exitoso con Tarjeta! ðŸ’³',
-                                    message: 'Tu pago de Bs. ${venta.montoTotal.toStringAsFixed(2)} fue confirmado exitosamente.',
+                                    title: fueOffline ? '📦 Pedido Preliminar Offline Guardado' : '¡Pago Exitoso con Tarjeta! 💳',
+                                    message: fueOffline
+                                        ? 'Tu pedido #${venta.id} se guardó con UUIDv4 y se sincronizará automáticamente al recuperar conexión.'
+                                        : 'Tu pago de Bs. ${venta.montoTotal.toStringAsFixed(2)} fue confirmado exitosamente.',
                                     tipo: 'COMPRA',
                                   );
                                   try {
@@ -481,7 +490,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 } else {
                                   setModalState(() {
                                     procesando = false;
-                                    errorStripe = ventasService.errorMessage ?? 'OcurriÃ³ un error al procesar el pago con la tarjeta.';
+                                    errorStripe = ventasService.errorMessage ?? 'Ocurrió un error al procesar el pago con la tarjeta.';
                                   });
                                 }
                               },
@@ -494,7 +503,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         const Icon(Icons.verified_user_outlined, size: 14, color: Color(0xFF64748B)),
                         const SizedBox(width: 6),
                         Text(
-                          'TransacciÃ³n protegida por Stripe Payments Inc. TLS 1.3',
+                          'Transacción protegida por Stripe Payments Inc. TLS 1.3',
                           style: GoogleFonts.plusJakartaSans(fontSize: 10, color: const Color(0xFF64748B)),
                         ),
                       ],
@@ -528,7 +537,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Â¡Pago Exitoso con Tarjeta!',
+              '¡Pago Exitoso con Tarjeta!',
               style: GoogleFonts.playfairDisplay(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -537,7 +546,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tu pedido #${venta.id} ha sido procesado mediante tarjeta de crÃ©dito exitosamente.',
+              'Tu pedido #${venta.id} ha sido procesado mediante tarjeta de crédito exitosamente.',
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppTheme.textSecondary),
             ),
@@ -642,7 +651,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Navigator.pop(context);
                   },
                   child: Text(
-                    'Volver al CatÃ¡logo',
+                    'Volver al Catálogo',
                     style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
                   ),
                 ),
@@ -654,7 +663,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  void _mostrarModalPagoQR(double montoTotal) {
+  /// CU-11 / RF-10: Modal de cobro QR Simple con imagen Base64 real y temporizador de 180 segundos
+  void _mostrarModalPagoQR(double montoTotal) async {
+    final ventasService = Provider.of<VentasService>(context, listen: false);
+
+    Map<String, dynamic>? qrData = await ventasService.generarCobroQRSimple(
+      monto: montoTotal,
+      glosa: 'Compra FashionStore Móvil - ${_nombreController.text.trim()}',
+    );
+
+    if (!mounted) return;
+
+    int segundosRestantes = int.tryParse(qrData?['vigencia_segundos']?.toString() ?? '180') ?? 180;
+    final String? qrId = qrData?['qr_id']?.toString();
+    final String? b64Raw = qrData?['qr_image_base64']?.toString();
+    Timer? countdownTimer;
+    bool modalCerrado = false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -662,131 +687,232 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            // Iniciar temporizador de 180 segundos (CU-11 / RF-10) una sola vez
+            countdownTimer ??= Timer.periodic(const Duration(seconds: 1), (timer) async {
+              if (modalCerrado || !modalCtx.mounted) {
+                timer.cancel();
+                return;
+              }
+              if (segundosRestantes > 0) {
+                setModalState(() => segundosRestantes--);
+                // Sondeo automático cada 4 segundos si existe qrId
+                if (qrId != null && segundosRestantes % 4 == 0) {
+                  final estado = await ventasService.consultarEstadoQR(qrId);
+                  if (estado != null && estado['pagado'] == true && !modalCerrado && modalCtx.mounted) {
+                    modalCerrado = true;
+                    timer.cancel();
+                    Navigator.pop(modalCtx);
+                    _ejecutarPagoFinal();
+                  }
+                }
+              } else {
+                timer.cancel();
+              }
+            });
+
+            final minStr = (segundosRestantes ~/ 60).toString().padLeft(2, '0');
+            final secStr = (segundosRestantes % 60).toString().padLeft(2, '0');
+
+            Widget qrWidget = Stack(
+              alignment: Alignment.center,
               children: [
-                Text(
-                  'Pago con QR Simple',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
-                  ),
+                const Icon(
+                  Icons.qr_code_2,
+                  size: 160,
+                  color: Color(0xFF0F172A),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(ctx),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.storefront,
+                    size: 22,
+                    color: Color(0xFF4F46E5),
+                  ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Escanea el cÃ³digo QR desde tu aplicaciÃ³n bancaria (BNB, BCP, Banco UniÃ³n, Mercantil o Bisa).',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textSecondary),
-            ),
-            const SizedBox(height: 20),
+            );
 
-            // Marco QR Digital
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+            if (b64Raw != null && b64Raw.isNotEmpty) {
+              try {
+                final cleanB64 = b64Raw.contains(',') ? b64Raw.split(',').last : b64Raw;
+                final bytes = base64Decode(cleanB64);
+                qrWidget = ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.memory(
+                    bytes,
+                    width: 175,
+                    height: 175,
+                    fit: BoxFit.contain,
                   ),
-                ],
-              ),
+                );
+              } catch (_) {}
+            }
+
+            return Padding(
+              padding: const EdgeInsets.all(24),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 190,
-                    height: 190,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        const Icon(
-                          Icons.qr_code_2,
-                          size: 160,
-                          color: Color(0xFF0F172A),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Pago con QR Simple (CU-11)',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.storefront,
-                            size: 22,
-                            color: Color(0xFF4F46E5),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          modalCerrado = true;
+                          countdownTimer?.cancel();
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Escanea el código QR interoperable desde tu aplicación bancaria (BNB, BCP, Banco Unión, Mercantil o Bisa).',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textSecondary),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Temporizador de 180 segundos (RF-10)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: segundosRestantes > 30 ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: segundosRestantes > 30 ? const Color(0xFF6EE7B7) : const Color(0xFFFCA5A5),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 16,
+                          color: segundosRestantes > 30 ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          segundosRestantes > 0
+                              ? 'Vigencia QR (RF-10): $minStr:$secStr (${segundosRestantes}s)'
+                              : 'QR Expirado - Genera uno nuevo',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: segundosRestantes > 30 ? const Color(0xFF065F46) : const Color(0xFF991B1B),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Monto a transferir:',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 11, color: AppTheme.textMuted),
-                  ),
-                  Text(
-                    'Bs. ${montoTotal.toStringAsFixed(2)}',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFF10B981),
+                  const SizedBox(height: 14),
+
+                  // Marco QR Digital
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 190,
+                          height: 190,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          ),
+                          child: Center(child: qrWidget),
+                        ),
+                        const SizedBox(height: 10),
+                        if (qrId != null)
+                          Text(
+                            'Ref: $qrId',
+                            style: GoogleFonts.plusJakartaSans(fontSize: 10, color: AppTheme.textMuted),
+                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Monto a transferir:',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 11, color: AppTheme.textMuted),
+                        ),
+                        Text(
+                          'Bs. ${montoTotal.toStringAsFixed(2)}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF10B981),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 18),
+
+                  // Botón Confirmar Pago
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+                      label: Text(
+                        'Ya realicé el pago QR',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
+                      ),
+                      onPressed: segundosRestantes <= 0
+                          ? null
+                          : () {
+                              modalCerrado = true;
+                              countdownTimer?.cancel();
+                              Navigator.pop(ctx);
+                              _ejecutarPagoFinal();
+                            },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-
-            // BotÃ³n Confirmar Pago
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF10B981),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                icon: const Icon(Icons.check_circle_outline, color: Colors.white),
-                label: Text(
-                  'Ya realicÃ© el pago QR',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: Colors.white,
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _ejecutarPagoFinal();
-                },
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      modalCerrado = true;
+      countdownTimer?.cancel();
+    });
   }
 
   void _ejecutarPagoFinal() async {
@@ -794,10 +920,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final ventasService = Provider.of<VentasService>(context, listen: false);
     final auth = Provider.of<AuthService>(context, listen: false);
     final user = auth.currentUser;
-    final clienteId = user?.username.isNotEmpty == true ? user!.username : user?.id.toString();
+    final clienteId = user?.identificadorUnico;
 
     final items = cart.items.map((i) => {
       'variante_id': i.varianteId,
+      'ropa_id': i.prendaId,
+      'prenda_nombre': i.prendaNombre,
+      'talla': i.talla,
+      'color': i.color,
       'cantidad': i.cantidad,
       'precio_unitario': i.precioUnitario,
     }).toList();
@@ -814,10 +944,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     if (venta != null && mounted) {
       cart.limpiarCarrito();
+      final fueOffline = ventasService.ultimaVentaFueOffline;
       InAppNotificationBanner.show(
         context,
-        title: 'Â¡Compra Exitosa! ðŸ›ï¸',
-        message: 'Tu pedido #${venta.id} por Bs. ${venta.montoTotal.toStringAsFixed(2)} ha sido procesado correctamente.',
+        title: fueOffline ? '📦 Pedido Preliminar Offline (CU-14)' : '¡Compra Exitosa! 🛍️',
+        message: fueOffline
+            ? 'Pedido #${venta.id} registrado localmente con UUIDv4. Se sincronizará automáticamente al reconectar.'
+            : 'Tu pedido #${venta.id} por Bs. ${venta.montoTotal.toStringAsFixed(2)} ha sido procesado correctamente.',
         tipo: 'COMPRA',
       );
       Provider.of<NotificacionesService>(context, listen: false).cargarNotificaciones(mostrarPopupSiHayNueva: false);
@@ -833,15 +966,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFECFDF5),
+                decoration: BoxDecoration(
+                  color: fueOffline ? const Color(0xFFFEF3C7) : const Color(0xFFECFDF5),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle, size: 50, color: Color(0xFF10B981)),
+                child: Icon(
+                  fueOffline ? Icons.cloud_upload_outlined : Icons.check_circle,
+                  size: 50,
+                  color: fueOffline ? const Color(0xFFD97706) : const Color(0xFF10B981),
+                ),
               ),
               const SizedBox(height: 16),
               Text(
-                'Â¡Compra Exitosa!',
+                fueOffline ? '¡Pedido Offline Encolado!' : '¡Compra Exitosa!',
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
@@ -850,7 +987,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Tu pedido #${venta.id} ha sido procesado y registrado con Ã©xito.',
+                fueOffline
+                    ? 'Tu pedido #${venta.id} fue guardado en SQLite con UUIDv4 y se enviará automáticamente al servidor.'
+                    : 'Tu pedido #${venta.id} ha sido procesado y registrado con éxito.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppTheme.textSecondary),
               ),
@@ -889,7 +1028,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('MÃ©todo:', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textMuted)),
+                        Text('Método:', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textMuted)),
                         Text(
                           _metodoPago == 'QR_SIMPLE' ? 'QR Simple' : _metodoPago,
                           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 12, color: AppTheme.textPrimary),
@@ -918,7 +1057,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
                     ),
                     onPressed: () {
-                      Navigator.pop(ctx); // Cerrar diÃ¡logo
+                      Navigator.pop(ctx);
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (_) => DetalleCompraScreen(venta: venta)),
@@ -936,11 +1075,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 11),
                     ),
                     onPressed: () {
-                      Navigator.pop(ctx); // Cerrar diÃ¡logo
-                      Navigator.pop(context); // Volver al catÃ¡logo/inicio
+                      Navigator.pop(ctx);
+                      Navigator.pop(context);
                     },
                     child: Text(
-                      'Volver al CatÃ¡logo',
+                      'Volver al Catálogo',
                       style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
                     ),
                   ),
@@ -1050,9 +1189,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 24),
 
-            // DirecciÃ³n y Datos de EnvÃ­o
+            // Dirección y Datos de Envío
             Text(
-              'DATOS DE ENTREGA Y FACTURACIÃ“N',
+              'DATOS DE ENTREGA Y FACTURACIÓN',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -1073,7 +1212,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   TextField(
                     controller: _direccionController,
                     decoration: InputDecoration(
-                      labelText: 'DirecciÃ³n de EnvÃ­o a Domicilio',
+                      labelText: 'Dirección de Envío a Domicilio',
                       prefixIcon: const Icon(Icons.location_on_outlined, size: 20),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -1085,7 +1224,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         child: TextField(
                           controller: _nombreController,
                           decoration: InputDecoration(
-                            labelText: 'RazÃ³n Social / Nombre',
+                            labelText: 'Razón Social / Nombre',
                             prefixIcon: const Icon(Icons.person_outline, size: 20),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
@@ -1109,9 +1248,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 24),
 
-            // MÃ©todos de Pago
+            // Métodos de Pago
             Text(
-              'MÃ‰TODO DE PAGO DIGITAL',
+              'MÉTODO DE PAGO DIGITAL',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -1122,28 +1261,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 10),
             _buildMetodoPagoOption(
               valor: 'STRIPE',
-              titulo: 'Tarjeta de Crédito',
-              subtitulo: '',
+              titulo: 'Tarjeta de Crédito (Stripe)',
+              subtitulo: 'Confirmación con pasarela y soporte offline',
               icono: Icons.credit_card,
               badge: 'RECOMENDADO',
             ),
             const SizedBox(height: 8),
             _buildMetodoPagoOption(
               valor: 'QR_SIMPLE',
-              titulo: 'Pago RÃ¡pido QR Simple',
-              subtitulo: 'Bancos de Bolivia (BNB, BCP, Banco UniÃ³n, Bisa)',
+              titulo: 'Pago Rápido QR Simple (Vigencia 180s)',
+              subtitulo: 'Bancos de Bolivia (BNB, BCP, Banco Unión, Bisa)',
               icono: Icons.qr_code_2,
             ),
             const SizedBox(height: 8),
             _buildMetodoPagoOption(
               valor: 'TRANSFERENCIA',
-              titulo: 'Transferencia Bancaria',
-              subtitulo: 'Abono directo a cuenta corporativa',
+              titulo: 'Transferencia / Pedido Preliminar',
+              subtitulo: 'Abono directo o encolado offline con UUIDv4',
               icono: Icons.account_balance,
             ),
             const SizedBox(height: 32),
 
-            // BotÃ³n Pagar
+            // Botón Pagar
             SizedBox(
               width: double.infinity,
               height: 54,
@@ -1262,13 +1401,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ],
                     ],
                   ),
-                  Text(
-                    subtitulo,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      color: AppTheme.textSecondary,
+                  if (subtitulo.isNotEmpty)
+                    Text(
+                      subtitulo,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -1284,6 +1424,3 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 }
-
-
-

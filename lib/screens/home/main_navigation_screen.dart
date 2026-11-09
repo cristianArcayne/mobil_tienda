@@ -5,6 +5,7 @@ import '../../config/theme.dart';
 import '../../services/auth_service.dart';
 import '../../services/carrito_service.dart';
 import '../../services/notificaciones_service.dart';
+import '../../services/sync_service.dart';
 import '../../widgets/guest_restriction_dialog.dart';
 import '../catalogo/catalogo_screen.dart';
 import '../vestidor/vestidor_virtual_screen.dart';
@@ -27,7 +28,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        Provider.of<NotificacionesService>(context, listen: false).iniciarPolling(context);
+        final auth = Provider.of<AuthService>(context, listen: false);
+        final user = auth.currentUser;
+        Provider.of<NotificacionesService>(context, listen: false).iniciarPolling(
+          context,
+          usuarioId: user?.id,
+        );
+        Provider.of<SyncService>(context, listen: false).iniciarDemonioSync(
+          context,
+          usuarioId: user?.identificadorUnico ?? 'guest',
+        );
       }
     });
   }

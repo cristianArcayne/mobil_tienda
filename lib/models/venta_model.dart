@@ -1,5 +1,7 @@
 class DetalleVentaModel {
   final int id;
+  final int varianteId;
+  final int? ropaId;
   final String prendaNombre;
   final String? imagenUrl;
   final String talla;
@@ -10,6 +12,8 @@ class DetalleVentaModel {
 
   DetalleVentaModel({
     required this.id,
+    this.varianteId = 0,
+    this.ropaId,
     required this.prendaNombre,
     this.imagenUrl,
     required this.talla,
@@ -20,15 +24,27 @@ class DetalleVentaModel {
   });
 
   factory DetalleVentaModel.fromJson(Map<String, dynamic> json) {
+    final pNom = (json['prenda_nombre'] ?? json['nombre'] ?? json['ropa_nombre'] ?? 'Prenda').toString();
+    final pTalla = (json['talla'] ?? json['medida'] ?? 'M').toString();
+    final pColor = (json['color'] ?? json['color_nombre'] ?? 'Estándar').toString();
+    final pCant = json['cantidad'] is int ? json['cantidad'] as int : int.tryParse(json['cantidad']?.toString() ?? '') ?? 1;
+    final pPrec = double.tryParse((json['precio_unitario'] ?? json['precio'] ?? '0').toString()) ?? 0.0;
+    double pSub = double.tryParse((json['subtotal'] ?? '0').toString()) ?? 0.0;
+    if (pSub <= 0 && pPrec > 0) {
+      pSub = pPrec * pCant;
+    }
+
     return DetalleVentaModel(
-      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
-      prendaNombre: json['prenda_nombre']?.toString() ?? 'Prenda',
+      id: json['id'] is int ? json['id'] as int : int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      varianteId: json['variante_id'] is int ? json['variante_id'] as int : int.tryParse(json['variante_id']?.toString() ?? '') ?? 0,
+      ropaId: json['ropa_id'] is int ? json['ropa_id'] as int : int.tryParse(json['ropa_id']?.toString() ?? ''),
+      prendaNombre: pNom.isNotEmpty ? pNom : 'Prenda',
       imagenUrl: json['imagen_url']?.toString() ?? json['imagen_principal']?.toString(),
-      talla: json['talla']?.toString() ?? 'Única',
-      color: json['color']?.toString() ?? 'Estándar',
-      cantidad: json['cantidad'] is int ? json['cantidad'] : int.tryParse(json['cantidad'].toString()) ?? 1,
-      precioUnitario: double.tryParse(json['precio_unitario']?.toString() ?? '0') ?? 0.0,
-      subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0.0,
+      talla: pTalla.isNotEmpty ? pTalla : 'M',
+      color: pColor.isNotEmpty ? pColor : 'Estándar',
+      cantidad: pCant,
+      precioUnitario: pPrec,
+      subtotal: pSub,
     );
   }
 }
@@ -37,7 +53,7 @@ class VentaModel {
   final int id;
   final String fecha;
   final double montoTotal;
-  final String estado; // COMPLETADA, PENDIENTE, CANCELADA
+  final String estado; // COMPLETADA, PENDIENTE, PENDIENTE_SYNC, CANCELADA
   final String? metodoPago;
   final String? numeroFactura;
   final String? direccionEnvio;
@@ -57,6 +73,27 @@ class VentaModel {
     required this.clienteNombre,
     required this.detalles,
   });
+
+  /// Calcula las horas transcurridas desde la compra para validar la Garantía Legal de 7 Días (168h - RN-01)
+  double get horasTranscurridas {
+    if (fecha.isEmpty) return 0.0;
+    try {
+      final dt = DateTime.parse(fecha).toUtc();
+      final ahora = DateTime.now().toUtc();
+      final diff = ahora.difference(dt).inMinutes / 60.0;
+      return diff < 0 ? 0.0 : diff;
+    } catch (_) {
+      return 0.0;
+    }
+  }
+
+  /// RN-01: Elegible dentro de los 7 días calendario (168 horas) posteriores a la compra
+  bool get esElegibleGarantia7Dias => horasTranscurridas <= 168.0;
+
+  double get diasRestantesGarantia {
+    final restHoras = 168.0 - horasTranscurridas;
+    return restHoras <= 0 ? 0.0 : (restHoras / 24.0);
+  }
 
   static String formatFechaLimpia(String rawIso) {
     if (rawIso.isEmpty) return '';
@@ -82,7 +119,7 @@ class VentaModel {
       nroFactura = json['factura']['nro_factura']?.toString();
     }
 
-    final rawMonto = json['total'] ?? json['monto_total'] ?? json['monto_neto'] ?? 0;
+    final rawMonto = json['total'] ?? json['monto_total'] ?? json['monto_neto'] ?? json['precio_total'] ?? 0;
     final double parsedMonto = double.tryParse(rawMonto.toString()) ?? 0.0;
 
     return VentaModel(
@@ -99,4 +136,3 @@ class VentaModel {
     );
   }
 }
-
