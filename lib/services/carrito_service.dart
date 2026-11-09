@@ -137,5 +137,20 @@ class CarritoService extends ChangeNotifier {
   void _persistirLocal() {
     StorageService.saveOfflineCart(_items.map((i) => i.toJson()).toList());
   }
+
+  // ============================================================================
+  // CASO DE USO CU-08: Gestionar Carrito de Compras Persistente Omnicanal
+  // Mantiene los articulos seleccionados en cache persistente local de forma
+  // resiliente, garantizando que el comprador no pierda su seleccion aun tras
+  // reinicios de la aplicacion o perdida momentanea de conectividad.
+  // ============================================================================
+  bool contieneVariante(int varianteId) {
+    return _items.any((i) => i.varianteId == varianteId);
+  }
+
+  int obtenerCantidadPorVariante(int varianteId) {
+    final item = _items.where((i) => i.varianteId == varianteId);
+    return item.isNotEmpty ? item.first.cantidad : 0;
+  }
 }
 
