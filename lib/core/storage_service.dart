@@ -151,6 +151,25 @@ class StorageService {
     return [];
   }
 
+  static const String _keyUltimaNotifVistaPrefix = 'fs_last_seen_notif_';
+
+  // Guardar ID de última notificación vista por usuario
+  static Future<void> saveUltimoIdNotificacionVista(int notifId, {String? userKey}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final uk = userKey ?? await getActiveUserKey();
+    final prev = prefs.getInt('$_keyUltimaNotifVistaPrefix$uk') ?? 0;
+    if (notifId > prev) {
+      await prefs.setInt('$_keyUltimaNotifVistaPrefix$uk', notifId);
+    }
+  }
+
+  // Obtener ID de última notificación vista por usuario
+  static Future<int> getUltimoIdNotificacionVista({String? userKey}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final uk = userKey ?? await getActiveUserKey();
+    return prefs.getInt('$_keyUltimaNotifVistaPrefix$uk') ?? 0;
+  }
+
   // Cerrar sesión limpiando únicamente la sesión activa
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();

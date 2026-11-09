@@ -8,6 +8,8 @@ import '../screens/notificaciones/notificaciones_screen.dart';
 import '../widgets/in_app_notification_banner.dart';
 
 class NotificacionesService extends ChangeNotifier {
+  static GlobalKey<NavigatorState>? globalNavigatorKey;
+
   List<NotificacionModel> _notificaciones = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -22,6 +24,17 @@ class NotificacionesService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  /// Obtiene un contexto activo para mostrar el Overlay del banner emergente
+  BuildContext? _obtenerContextoActivo() {
+    if (_currentContext != null && _currentContext!.mounted) {
+      return _currentContext;
+    }
+    if (globalNavigatorKey?.currentContext != null && globalNavigatorKey!.currentContext!.mounted) {
+      return globalNavigatorKey!.currentContext;
+    }
+    return null;
+  }
+
   /// Cambia el usuario activo y limpia las notificaciones del usuario anterior
   /// garantizando aislamiento estricto de notificaciones PUSH / In-App.
   Future<void> cambiarUsuarioActivo(int? nuevoUsuarioId) async {
@@ -30,7 +43,7 @@ class NotificacionesService extends ChangeNotifier {
     _notificacionesVistas.clear();
     _isFirstLoad = true;
     notifyListeners();
-    await cargarNotificaciones(mostrarPopupSiHayNueva: false);
+    await cargarNotificaciones(mostrarPopupSiHayNueva: true);
   }
 
   void limpiarNotificaciones() {
@@ -50,10 +63,10 @@ class NotificacionesService extends ChangeNotifier {
     }
     if (_pollingTimer != null && _pollingTimer!.isActive) return;
 
-    // Cargar inmediatamente
-    cargarNotificaciones(mostrarPopupSiHayNueva: false);
+    // Cargar inmediatamente permitiendo el popup emergente si hay aviso nuevo del admin
+    cargarNotificaciones(mostrarPopupSiHayNueva: true);
 
-    // Polling cada 5 segundos
+    // Polling cada 5 segundos para tiempo real
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       cargarNotificaciones(mostrarPopupSiHayNueva: true);
     });
@@ -69,7 +82,7 @@ class NotificacionesService extends ChangeNotifier {
   }
 
   // Cargar notificaciones desde el backend filtradas por usuario_id
-  Future<void> cargarNotificaciones({bool mostrarPopupSiHayNueva = false}) async {
+  Future<void> cargarNotificaciones({bool mostrarPopupSiHayNueva = true}) async {
     try {
       int? uid = _usuarioActivoId;
       if (uid == null) {
@@ -114,42 +127,75 @@ class NotificacionesService extends ChangeNotifier {
         listaNuevas = listaNuevas.where((n) => n.usuarioId == null).toList();
       }
 
-      // Si es la primera carga (arranque de app o cambio de usuario), registrar TODAS silenciosamente
+      final userKey = uid != null ? uid.toString() : 'guest';
+      final ultimoIdVisto = await StorageService.getUltimoIdNotificacionVista(userKey: userKey);
+
+      // =======================================================================
+      // 1. PRIMERA CARGA (Al entrar o autenticarse en la app móvil)
+      // =======================================================================
       if (_isFirstLoad) {
+        _isFirstLoad = false;
+
+        // Detectar notificaciones creadas por el admin mientras el usuario no estaba en la app
+        final List<NotificacionModel> pendientes = [];
+        for (final n in listaNuevas) {
+          // Aislamiento: invitados no reciben popups transaccionales ajenos
+          if (uid == null && (n.tipo == 'COMPRA' || n.tipo == 'RESERVA' || n.tipo == 'DEVOLUCION')) {
+            continue;
+          }
+          if (ultimoIdVisto > 0) {
+            if (n.id > ultimoIdVisto) {
+              pendientes.add(n);
+            }
+          } else {
+            // Primer uso del dispositivo: mostrar la más reciente si no está leída
+            if (!n.leida) {
+              pendientes.add(n);
+            }
+          }
+        }
+
+        // Registrar todas en el set de memoria para evitar duplicados en el polling posterior
         for (final n in listaNuevas) {
           _notificacionesVistas.add(n.id);
         }
-        _isFirstLoad = false;
-      } else if (mostrarPopupSiHayNueva && _currentContext != null) {
-        // En cargas posteriores en tiempo real, solo mostrar popup para notificaciones no vistas
+
+        final maxId = listaNuevas.fold<int>(0, (prev, n) => n.id > prev ? n.id : prev);
+        if (maxId > 0) {
+          await StorageService.saveUltimoIdNotificacionVista(maxId, userKey: userKey);
+        }
+
+        // Si hay una notificación pendiente creada por el admin, mostrar el banner emergente tras 650ms
+        if (pendientes.isNotEmpty && mostrarPopupSiHayNueva) {
+          pendientes.sort((a, b) => b.id.compareTo(a.id));
+          final notifDestacada = pendientes.first;
+
+          Future.delayed(const Duration(milliseconds: 650), () {
+            final ctx = _obtenerContextoActivo();
+            if (ctx != null && ctx.mounted) {
+              _mostrarBannerEmergente(ctx, notifDestacada);
+            }
+          });
+        }
+      }
+
+      // =======================================================================
+      // 2. CARGAS POSTERIORES EN TIEMPO REAL (Durante el uso de la app)
+      // =======================================================================
+      else if (mostrarPopupSiHayNueva) {
         for (final n in listaNuevas) {
           if (!_notificacionesVistas.contains(n.id)) {
             _notificacionesVistas.add(n.id);
+            await StorageService.saveUltimoIdNotificacionVista(n.id, userKey: userKey);
 
-            // Regla de aislamiento: un invitado nunca debe recibir popups de COMPRA, RESERVA o DEVOLUCION ajenas
+            // Aislamiento: invitados no reciben avisos transaccionales ajenos
             if (uid == null && (n.tipo == 'COMPRA' || n.tipo == 'RESERVA' || n.tipo == 'DEVOLUCION')) {
               continue;
             }
 
-            try {
-              if (_currentContext!.mounted) {
-                InAppNotificationBanner.show(
-                  _currentContext!,
-                  title: n.titulo,
-                  message: n.mensaje,
-                  tipo: n.tipo,
-                  onTap: () {
-                    if (_currentContext != null && _currentContext!.mounted) {
-                      Navigator.push(
-                        _currentContext!,
-                        MaterialPageRoute(builder: (_) => const NotificacionesScreen()),
-                      );
-                    }
-                  },
-                );
-              }
-            } catch (e) {
-              debugPrint('[Notificaciones] Error al mostrar banner emergente: $e');
+            final ctx = _obtenerContextoActivo();
+            if (ctx != null && ctx.mounted) {
+              _mostrarBannerEmergente(ctx, n);
             }
           }
         }
@@ -162,6 +208,28 @@ class NotificacionesService extends ChangeNotifier {
       _errorMessage = e.toString();
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  void _mostrarBannerEmergente(BuildContext ctx, NotificacionModel n) {
+    try {
+      InAppNotificationBanner.show(
+        ctx,
+        title: n.titulo,
+        message: n.mensaje,
+        tipo: n.tipo,
+        onTap: () {
+          final navCtx = _obtenerContextoActivo();
+          if (navCtx != null && navCtx.mounted) {
+            Navigator.push(
+              navCtx,
+              MaterialPageRoute(builder: (_) => const NotificacionesScreen()),
+            );
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('[Notificaciones] Error al desplegar banner emergente: $e');
     }
   }
 
