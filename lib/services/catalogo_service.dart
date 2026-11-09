@@ -101,4 +101,22 @@ class CatalogoService extends ChangeNotifier {
     }
     return null;
   }
+
+  // ============================================================================
+  // CASO DE USO CU-05: Consultar Catálogo y Disponibilidad en Modo Offline
+  // Permite al usuario continuar explorando prendas cargadas previamente en
+  // memoria y aplicar filtros de talla o categoría sin requerir enlace activo.
+  // ============================================================================
+  bool get isModoOffline => _prendas.isNotEmpty && _errorMessage != null;
+
+  List<PrendaModel> filtrarEnMemoriaOffline({String? query, int? categoriaId}) {
+    return _prendas.where((p) {
+      final coincideCat = categoriaId == null || p.categoriaId == categoriaId;
+      final coincideTexto = query == null ||
+          query.isEmpty ||
+          p.nombre.toLowerCase().contains(query.toLowerCase()) ||
+          p.descripcion.toLowerCase().contains(query.toLowerCase());
+      return coincideCat && coincideTexto;
+    }).toList();
+  }
 }
