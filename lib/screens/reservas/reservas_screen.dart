@@ -18,7 +18,7 @@ class _ReservasScreenState extends State<ReservasScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthService>(context, listen: false);
       final user = auth.currentUser;
-      final clienteId = user?.username.isNotEmpty == true ? user!.username : user?.id.toString();
+      final clienteId = user?.identificadorUnico;
       Provider.of<ReservasService>(context, listen: false).cargarReservas(clienteId: clienteId);
     });
   }
@@ -90,14 +90,15 @@ class _ReservasScreenState extends State<ReservasScreen> {
                   ),
                 )
               : RefreshIndicator(
-                  onRefresh: () => resService.cargarReservas(),
+                  onRefresh: () => resService.cargarReservas(clienteId: auth.currentUser?.identificadorUnico),
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: resService.reservas.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 14),
                     itemBuilder: (ctx, i) {
                       final r = resService.reservas[i];
-                      final activa = r.estaActiva;
+                      final activa = r.estaActiva || r.estado == 'PENDIENTE_SYNC';
+                      final esOffline = r.estado == 'PENDIENTE_SYNC';
 
                       return Card(
                         elevation: 2,
@@ -118,15 +119,19 @@ class _ReservasScreenState extends State<ReservasScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: activa ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                                      color: esOffline
+                                          ? const Color(0xFFFEF3C7)
+                                          : (activa ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9)),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
-                                      r.estado,
+                                      esOffline ? 'OFFLINE • PENDIENTE SYNC' : r.estado,
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: activa ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                                        color: esOffline
+                                            ? const Color(0xFFB45309)
+                                            : (activa ? const Color(0xFF15803D) : const Color(0xFF64748B)),
                                       ),
                                     ),
                                   ),
@@ -163,8 +168,8 @@ class _ReservasScreenState extends State<ReservasScreen> {
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
-                                      'Retirar antes de: ${r.fechaLimiteFormateada}',
-                                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFFD97706)),
+                                      'Vigencia 48h (Tolerancia 2h RN-04) • Retirar antes de: ${r.fechaLimiteFormateada}',
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFD97706)),
                                     ),
                                   ),
                                 ],
@@ -250,7 +255,7 @@ class _ReservasScreenState extends State<ReservasScreen> {
                                     'Total estimado: Bs. ${r.montoTotalEstimado.toStringAsFixed(2)}',
                                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF10B981)),
                                   ),
-                                  if (activa)
+                                  if (activa && !esOffline)
                                     OutlinedButton.icon(
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: const Color(0xFFEF4444),
@@ -292,4 +297,3 @@ class _ReservasScreenState extends State<ReservasScreen> {
     );
   }
 }
-

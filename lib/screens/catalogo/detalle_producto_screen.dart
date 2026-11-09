@@ -753,7 +753,124 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                     p.descripcion.isNotEmpty ? p.descripcion : 'Prenda confeccionada con telas de primera calidad para garantizar confort y estilo duradero.',
                     style: const TextStyle(fontSize: 14, color: Color(0xFF475569), height: 1.5),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
+
+                  // RF-15: Sugerencias de Venta Cruzada impulsadas por Machine Learning ("Completa tu Look - IA")
+                  Consumer<CatalogoService>(
+                    builder: (context, catServ, _) {
+                      final sugerenciasML = catServ.prendas
+                          .where((item) => item.id != p.id)
+                          .take(6)
+                          .toList();
+                      if (sugerenciasML.isEmpty) return const SizedBox.shrink();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEEF2FF),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.auto_awesome, size: 14, color: Color(0xFF4F46E5)),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'ML VENTA CRUZADA (RF-15)',
+                                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF4F46E5)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  'Completa tu Look',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 175,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: sugerenciasML.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 12),
+                              itemBuilder: (ctx, idx) {
+                                final sug = sugerenciasML[idx];
+                                final sugImg = sug.imagenPrincipal ?? (sug.imagenes.isNotEmpty ? sug.imagenes.first : '');
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => DetalleProductoScreen(prendaId: sug.id)),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: 130,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: sugImg.isNotEmpty
+                                              ? Image.network(
+                                                  sugImg,
+                                                  width: double.infinity,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) => Container(
+                                                    color: const Color(0xFFF1F5F9),
+                                                    child: const Center(child: Icon(Icons.checkroom, color: Color(0xFF94A3B8))),
+                                                  ),
+                                                )
+                                              : Container(
+                                                  color: const Color(0xFFF1F5F9),
+                                                  child: const Center(child: Icon(Icons.checkroom, color: Color(0xFF94A3B8))),
+                                                ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                sug.nombre,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                'Bs. ${sug.precio.toStringAsFixed(2)}',
+                                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF10B981)),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      );
+                    },
+                  ),
 
                   // Sección CU19: Reseñas y Calificaciones de Clientes
                   Container(

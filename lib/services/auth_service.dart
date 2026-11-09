@@ -10,6 +10,7 @@ class AuthService extends ChangeNotifier {
   bool _isInitialized = false;
   bool _isGuest = false;
   String? _errorMessage;
+  final List<void Function(UsuarioModel?)> _sessionListeners = [];
 
   UsuarioModel? get currentUser => _currentUser;
   bool get isAuthenticated => _currentUser != null;
@@ -17,6 +18,20 @@ class AuthService extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  void addSessionChangeListener(void Function(UsuarioModel?) listener) {
+    if (!_sessionListeners.contains(listener)) {
+      _sessionListeners.add(listener);
+    }
+  }
+
+  void _notifySessionListeners() {
+    for (final listener in _sessionListeners) {
+      try {
+        listener(_currentUser);
+      } catch (_) {}
+    }
+  }
 
   AuthService() {
     init();
@@ -38,6 +53,7 @@ class AuthService extends ChangeNotifier {
       // Ignorar fallos de deserialización en arranque
     } finally {
       _isInitialized = true;
+      _notifySessionListeners();
       notifyListeners();
     }
   }
@@ -47,6 +63,7 @@ class AuthService extends ChangeNotifier {
     _currentUser = null;
     _isGuest = true;
     _errorMessage = null;
+    _notifySessionListeners();
     notifyListeners();
   }
 
@@ -86,6 +103,7 @@ class AuthService extends ChangeNotifier {
 
           _isGuest = false;
           _isLoading = false;
+          _notifySessionListeners();
           notifyListeners();
           return true;
         }
@@ -291,6 +309,7 @@ class AuthService extends ChangeNotifier {
     await StorageService.clearSession();
     _currentUser = null;
     _isGuest = true;
+    _notifySessionListeners();
     notifyListeners();
   }
 

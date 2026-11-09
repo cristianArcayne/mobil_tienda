@@ -22,7 +22,7 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
       if (mounted) {
         final auth = Provider.of<AuthService>(context, listen: false);
         final u = auth.currentUser;
-        final clienteId = u?.username.isNotEmpty == true ? u!.username : u?.id.toString();
+        final clienteId = u?.identificadorUnico;
         Provider.of<VentasService>(context, listen: false).cargarHistorialCompras(clienteId: clienteId);
       }
     });
@@ -79,7 +79,7 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
                   onRefresh: () {
                     final auth = Provider.of<AuthService>(context, listen: false);
                     final u = auth.currentUser;
-                    final clienteId = u?.username.isNotEmpty == true ? u!.username : u?.id.toString();
+                    final clienteId = u?.identificadorUnico;
                     return ventasService.cargarHistorialCompras(clienteId: clienteId);
                   },
                   child: ListView.separated(
@@ -96,6 +96,8 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
   }
 
   Widget _buildVentaCard(BuildContext context, VentaModel venta) {
+    final esOffline = venta.estado == 'PENDIENTE_SYNC';
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -161,15 +163,15 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
+                        color: esOffline ? const Color(0xFFFEF3C7) : const Color(0xFFECFDF5),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        venta.estado.toUpperCase(),
+                        esOffline ? 'OFFLINE • PENDIENTE SYNC' : venta.estado.toUpperCase(),
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF059669),
+                          color: esOffline ? const Color(0xFFB45309) : const Color(0xFF059669),
                         ),
                       ),
                     ),
@@ -183,7 +185,7 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${venta.detalles.length} ${venta.detalles.length == 1 ? "artículo" : "artículos"}',
+                      '${venta.detalles.length} ${venta.detalles.length == 1 ? "artículo" : "artículos"} • Garantía 7d: ${venta.esElegibleGarantia7Dias ? "Activa (${venta.diasRestantesGarantia}d)" : "Vencida"}',
                       style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppTheme.textSecondary),
                     ),
                     Text(
@@ -201,7 +203,7 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      'Ver seguimiento y QR',
+                      'Ver seguimiento, QR y Cambio de Talla (7d)',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -219,4 +221,3 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
     );
   }
 }
-

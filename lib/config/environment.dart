@@ -1,24 +1,35 @@
 class Environment {
-  // IP o Host personalizado configurable (ej: '192.168.1.50' para celular físico)
+  // URL de producción desplegada en la nube Render
+  static const String defaultProductionUrl = 'https://tienda-backend-kvfk.onrender.com';
   static String? _customHost;
 
-  static void setCustomHost(String host) {
-    _customHost = host;
+  static void setCustomHost(String? host) {
+    if (host == null || host.trim().isEmpty) {
+      _customHost = null;
+      return;
+    }
+    final h = host.trim();
+    // Si contiene IPs locales obsoletas de pruebas, ignorarlas para garantizar conexión a la nube Render
+    if (h.contains('192.168.') || h.contains('127.0.0.1') || h.contains('localhost')) {
+      _customHost = null;
+      return;
+    }
+    _customHost = h;
   }
 
-  // URL por defecto del backend desplegado en Render (o customHost si se especifica)
+  // URL por defecto apuntando a la nube Render
   static String get baseUrl {
     if (_customHost != null && _customHost!.isNotEmpty) {
       if (_customHost!.startsWith('http://') || _customHost!.startsWith('https://')) {
-        return _customHost!;
+        return _customHost!.endsWith('/') ? _customHost!.substring(0, _customHost!.length - 1) : _customHost!;
       }
-      return 'http://$_customHost:8000';
+      return 'https://$_customHost';
     }
 
-    // Por defecto se conecta al backend en la nube en Render
-    return 'https://tienda-backend-kvfk.onrender.com';
-  }         
-  // Claves de API para Vestidor Virtual
+    return defaultProductionUrl;
+  }
+
+  // Claves de API para Vestidor Virtual (Intactas)
   static const List<String> decartApiKeys = [
     'dct_tienda-virtual_MFvQCKqLlCmcRVTfIGcoypZXfkiCWGeOrqgzFsbOKpCdEZhgJQERagVnPbbXqQzq',
     'dct_si2-parcial_qOCBWVtsCDmnrhLMjaIYMTjRJMnTqIOvtoCrcHWOepoDKFWkVSfgFowaeMznUrJw',
@@ -29,7 +40,7 @@ class Environment {
 
   // Rutas base de la API FastAPI
   static String get apiV1 => '$baseUrl/api/v1';
-  
+
   // Endpoints específicos de Autenticación y Seguridad
   static String get authLogin => '$apiV1/login/';
   static String get authRegistro => '$apiV1/usuarios/registrar_cliente/';
@@ -51,7 +62,7 @@ class Environment {
   static String get resenas => '$apiV1/resenas';
   static String get stripePagos => '$apiV1/pagos/stripe';
 
-  // Formatea URLs relativas (/static/uploads/...) a URLs absolutas (http://192.168.1.3:8000/static/uploads/...)
+  // Formatea URLs relativas (/static/uploads/...) a URLs absolutas hacia el backend en Render
   static String formatImageUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
