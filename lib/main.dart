@@ -18,8 +18,13 @@ import 'screens/auth/login_screen.dart';
 import 'core/storage_service.dart';
 import 'config/environment.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Conectar llave de navegación global para banners emergentes Overlay
+  NotificacionesService.globalNavigatorKey = rootNavigatorKey;
 
   // Cargar host configurado o migrar hacia Render por defecto
   final savedHost = await StorageService.getServerHost();
@@ -83,6 +88,7 @@ class FashionStoreApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: rootNavigatorKey,
       title: 'FashionStore Atelier Móvil',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
