@@ -61,6 +61,32 @@ class ReservaModel {
 
   bool get estaActiva => estado == 'PENDIENTE' || estado == 'CONFIRMADA';
 
+  // ============================================================================
+  // CASO DE USO CU-07: Gestionar Reservas Web-to-Store con Soporte Offline
+  // Valida la caducidad reglamentaria de 48 horas de la reserva y el congelamiento
+  // temporal de stock en la tienda fisica seleccionada.
+  // ============================================================================
+  bool get haExpirado {
+    if (fechaLimite.isEmpty) return false;
+    try {
+      final limite = DateTime.parse(fechaLimite).toLocal();
+      return DateTime.now().isAfter(limite);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Duration? get tiempoRestante {
+    if (fechaLimite.isEmpty) return null;
+    try {
+      final limite = DateTime.parse(fechaLimite).toLocal();
+      final diff = limite.difference(DateTime.now());
+      return diff.isNegative ? Duration.zero : diff;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static String formatFechaLimpia(String rawIso) {
     if (rawIso.isEmpty) return '';
     try {
