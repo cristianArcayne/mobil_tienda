@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'ar_view_stub.dart'
@@ -30,9 +31,19 @@ class _LiveArScreenState extends State<LiveArScreen> {
   }
 
   Future<void> _requestPermissions() async {
+    if (kIsWeb) {
+      setState(() {
+        _hasPermissions = true;
+      });
+      return;
+    }
     final status = await Permission.camera.request();
     await Permission.microphone.request();
     if (status.isGranted) {
+      setState(() {
+        _hasPermissions = true;
+      });
+    } else {
       setState(() {
         _hasPermissions = true;
       });
