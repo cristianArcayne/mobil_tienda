@@ -74,7 +74,7 @@ class VentaModel {
     required this.detalles,
   });
 
-  /// Calcula las horas transcurridas desde la compra para validar la Garantía Legal de 7 Días (168h - RN-01)
+  /// Calcula las horas transcurridas desde la compra para validar la Garantía Legal de 7 Días (168h)
   double get horasTranscurridas {
     if (fecha.isEmpty) return 0.0;
     try {
@@ -87,7 +87,7 @@ class VentaModel {
     }
   }
 
-  /// RN-01: Elegible dentro de los 7 días calendario (168 horas) posteriores a la compra
+  /// Elegible dentro de los 7 días calendario (168 horas) posteriores a la compra
   bool get esElegibleGarantia7Dias => horasTranscurridas <= 168.0;
 
   double get diasRestantesGarantia {

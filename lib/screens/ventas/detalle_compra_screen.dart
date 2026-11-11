@@ -75,7 +75,7 @@ class _DetalleCompraScreenState extends State<DetalleCompraScreen> {
     final elegible7Dias = venta.esElegibleGarantia7Dias;
     final diasRestantes = venta.diasRestantesGarantia;
 
-    // Cálculo dinámico de pasos completados y activos (RN-01, Tracking)
+    // Cálculo dinámico de pasos completados y activos
     final esCompletado = _estadoActual == 'ENTREGADO' || _estadoActual == 'COMPLETADA' || _estadoActual == 'PAGADA';
     final esListoRetiro = _estadoActual == 'LISTO_RETIRO' || _estadoActual == 'EN_RUTA';
     final esEnPrep = _estadoActual == 'EN_PREPARACION';
@@ -475,6 +475,8 @@ class _DetalleCompraScreenState extends State<DetalleCompraScreen> {
   // ===========================================================================
   void _mostrarModalGarantiaUnificado(BuildContext context) async {
     final service = Provider.of<VentasService>(context, listen: false);
+    final elegible7Dias = venta.esElegibleGarantia7Dias;
+    final diasRestantes = venta.diasRestantesGarantia;
 
     // 1. Datos iniciales para Cambio de Talla
     DetalleVentaModel? detalleCambioActual = venta.detalles.isNotEmpty ? venta.detalles.first : null;
@@ -944,10 +946,10 @@ class _DetalleCompraScreenState extends State<DetalleCompraScreen> {
                     ]
 
                     // =========================================================
-                    // CONTENIDO PESTAÑA 1: DEVOLUCIÓN / REEMBOLSO (RN-01)
+                    // CONTENIDO PESTAÑA 1: DEVOLUCIÓN / REEMBOLSO
                     // =========================================================
                     else ...[
-                      // Aviso RN-01
+                      // Aviso de Garantía Legal
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -962,7 +964,7 @@ class _DetalleCompraScreenState extends State<DetalleCompraScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Garantía Legal RN-01 (168 Horas): Puedes solicitar el reembolso de tu pedido #${venta.id} (${venta.numeroFactura ?? "FAC-ECOM"}) eligiendo la prenda específica o la orden completa.',
+                                'Garantía Legal de 7 Días (168 Horas): Puedes solicitar el reembolso de tu pedido #${venta.id} (${venta.numeroFactura ?? "FAC-ECOM"}) eligiendo la prenda específica o la orden completa.',
                                 style: GoogleFonts.plusJakartaSans(fontSize: 11, color: AppTheme.textSecondary, height: 1.35),
                               ),
                             ),
@@ -1114,9 +1116,20 @@ class _DetalleCompraScreenState extends State<DetalleCompraScreen> {
                             enviandoAccion ? 'Enviando Solicitud...' : 'Enviar Solicitud de Reembolso',
                             style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 14),
                           ),
-                          onPressed: enviandoAccion
+                          onPressed: (!elegible7Dias || enviandoAccion)
                               ? null
                               : () async {
+                                  if (!elegible7Dias) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'La garantía de 7 días ya venció para este pedido (quedan ${diasRestantes.toStringAsFixed(0)} días).',
+                                        ),
+                                        backgroundColor: const Color(0xFFEF4444),
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   if (motivoDevolucionCtrl.text.trim().isEmpty) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text('Por favor ingresa el motivo del reembolso.')),

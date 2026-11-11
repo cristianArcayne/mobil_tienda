@@ -11,7 +11,7 @@ import 'notificaciones_service.dart';
 import 'reservas_service.dart';
 import 'ventas_service.dart';
 
-/// CU-14 / RF-14 / RN-07: Demonio de Sincronización Automática en Segundo Plano
+/// CU-14: Demonio de Sincronización Automática en Segundo Plano
 /// Monitorea la conectividad y la cola `outbox_sync` en SQLite, transmite operaciones offline
 /// (RESERVA, VENTA_PRELIMINAR, FAVORITO) con UUIDv4 de idempotencia al recuperar red,
 /// actualiza automáticamente Compras y Reservas, y notifica cuando vuelve el internet.
@@ -190,7 +190,10 @@ class SyncService extends ChangeNotifier {
             final res = await ApiClient.post('${Environment.reservas}/crear', payload);
             if (res != null) exitoOp = true;
           } else if (tipo == 'VENTA_PRELIMINAR') {
-            // 1. Intentar lote de sincronización idempotente (CU-14 / RN-07)
+            // 1. Intentar lote de sincronización idempotente (CU-14)
+            bool huboConflictoStock = false;
+            String mensajeConflicto = '';
+
             try {
               final resLote = await ApiClient.post(
                 '${Environment.ventas}/sincronizar-lote',
@@ -206,13 +209,54 @@ class SyncService extends ChangeNotifier {
               );
               if (resLote is Map && ((resLote['total_exitosas'] as num?) ?? 0) > 0) {
                 exitoOp = true;
+              } else if (resLote is Map && resLote.containsKey('resultados')) {
+                final listRes = resLote['resultados'] as List;
+                if (listRes.isNotEmpty) {
+                  final primerRes = listRes.first as Map;
+                  final statusRes = primerRes['status']?.toString() ?? '';
+                  final detRes = primerRes['detalle']?.toString() ?? '';
+                  if (statusRes == 'CONFLICTO_STOCK' ||
+                      detRes.toLowerCase().contains('conflicto') ||
+                      detRes.toLowerCase().contains('stock') ||
+                      detRes.toLowerCase().contains('agotad')) {
+                    huboConflictoStock = true;
+                    mensajeConflicto = detRes.isNotEmpty ? detRes : 'Existencias agotadas para esta prenda.';
+                  }
+                }
               }
-            } catch (_) {}
+            } catch (errLote) {
+              final errLoteStr = errLote.toString().toLowerCase();
+              if (errLoteStr.contains('409') ||
+                  errLoteStr.contains('conflicto') ||
+                  errLoteStr.contains('stock') ||
+                  errLoteStr.contains('agotad')) {
+                huboConflictoStock = true;
+                mensajeConflicto = 'Conflicto de stock: la última unidad ya fue vendida por otro dispositivo.';
+              }
+            }
 
-            // 2. Fallback directo a /ecommerce si el lote no procesó la venta
-            if (!exitoOp) {
-              final resEcom = await ApiClient.post('${Environment.ventas}/ecommerce', payload);
-              if (resEcom != null) exitoOp = true;
+            if (huboConflictoStock) {
+              // NO hacer fallback a e-commerce. Marcar conflicto en SQLite y notificar
+              await SqliteService.marcarOutboxSincronizado(
+                uuid,
+                uid,
+                nuevoEstado: 'CONFLICTO_STOCK',
+                error: mensajeConflicto,
+              );
+              if (_currentContext != null && _currentContext!.mounted) {
+                InAppNotificationBanner.show(
+                  _currentContext!,
+                  title: '⚠️ Conflicto de Stock Offline',
+                  message: 'No se pudo completar la venta: la última unidad ya fue vendida por otro dispositivo mientras estabas offline.',
+                  tipo: 'DEVOLUCION',
+                );
+              }
+            } else if (!exitoOp) {
+              // 2. Fallback a /ecommerce únicamente si NO fue un conflicto de stock
+              try {
+                final resEcom = await ApiClient.post('${Environment.ventas}/ecommerce', payload);
+                if (resEcom != null) exitoOp = true;
+              } catch (_) {}
             }
           } else if (tipo == 'FAVORITO') {
             final ropaId = payload['ropa_id'];

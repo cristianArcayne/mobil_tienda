@@ -45,7 +45,7 @@ class StorageService {
     return prefs.getString(_keyServerHost);
   }
 
-  // Guardar Tenant / Empresa ID (RN-05 Multitenancy)
+  // Guardar Tenant / Empresa ID
   static Future<void> saveTenantId(String tenantId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyTenantId, tenantId);

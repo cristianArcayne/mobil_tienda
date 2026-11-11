@@ -7,7 +7,7 @@ import '../models/prenda_model.dart';
 import '../models/carrito_model.dart';
 
 /// Servicio Centralizado de Base de Datos Local SQLite (fashionstore_local.db)
-/// Cumple con CU-05, CU-07, CU-08, CU-14, RF-13, RF-14 y RN-07.
+/// Cumple con CU-05, CU-07, CU-08, CU-14.
 /// Garantiza aislamiento estricto de datos por usuario (usuario_id).
 class SqliteService {
   static Database? _db;
@@ -40,7 +40,7 @@ class SqliteService {
   }
 
   static Future<void> _onCreate(Database db, int version) async {
-    // 1. Tabla de Caché de Prendas (CU-05 / RF-13)
+    // 1. Tabla de Caché de Prendas (CU-05)
     await db.execute('''
       CREATE TABLE IF NOT EXISTS prendas_cache (
         id INTEGER PRIMARY KEY,
@@ -111,7 +111,7 @@ class SqliteService {
       )
     ''');
 
-    // 5. Cola Outbox de Sincronización Offline con UUIDv4 (CU-07, CU-14, RN-07)
+    // 5. Cola Outbox de Sincronización Offline con UUIDv4 (CU-07, CU-14)
     await db.execute('''
       CREATE TABLE IF NOT EXISTS outbox_sync (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -132,7 +132,7 @@ class SqliteService {
   }
 
   // ===========================================================================
-  // 1. GESTIÓN DE CATÁLOGO Y STOCK OFFLINE (CU-05 / RF-13)
+  // 1. GESTIÓN DE CATÁLOGO Y STOCK OFFLINE (CU-05)
   // ===========================================================================
 
   static Map<String, dynamic> _prendaToMap(PrendaModel p) {
@@ -551,7 +551,7 @@ class SqliteService {
   }
 
   // ===========================================================================
-  // 4. COLA OUTBOX DE OPERACIONES OFFLINE CON UUIDv4 (CU-07, CU-14, RN-07)
+  // 4. COLA OUTBOX DE OPERACIONES OFFLINE CON UUIDv4 (CU-07, CU-14)
   // ===========================================================================
 
   static Future<void> encolarOperacionOffline({
@@ -600,7 +600,7 @@ class SqliteService {
     } catch (_) {}
   }
 
-  static Future<List<Map<String, dynamic>>> obtenerOutboxPendientes({String? usuarioId}) async {
+  static Future<List<Map<String, dynamic>>> obtenerOutboxPendientes({String? usuarioId, bool incluirConflictos = false}) async {
     final uid = (usuarioId != null && usuarioId.trim().isNotEmpty) ? usuarioId.trim() : null;
     final db = await database;
 
@@ -608,10 +608,12 @@ class SqliteService {
 
     if (db != null) {
       try {
+        final whereClause = incluirConflictos ? 'estado = ? OR estado = ?' : 'estado = ?';
+        final whereArgs = incluirConflictos ? ['PENDIENTE', 'CONFLICTO_STOCK'] : ['PENDIENTE'];
         final rows = await db.query(
           'outbox_sync',
-          where: 'estado = ?',
-          whereArgs: ['PENDIENTE'],
+          where: whereClause,
+          whereArgs: whereArgs,
           orderBy: 'fecha_creacion ASC',
         );
         for (final r in rows) {
@@ -644,7 +646,9 @@ class SqliteService {
         if (raw != null && raw.isNotEmpty) {
           final list = (jsonDecode(raw) as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
           for (final item in list) {
-            if (item['estado'] == 'PENDIENTE') {
+            final st = item['estado']?.toString() ?? '';
+            final coincide = incluirConflictos ? (st == 'PENDIENTE' || st == 'CONFLICTO_STOCK') : (st == 'PENDIENTE');
+            if (coincide) {
               final u = item['uuid_transaccion']?.toString() ?? '';
               if (u.isNotEmpty) {
                 unificadosPorUuid[u] = item;
@@ -687,7 +691,7 @@ class SqliteService {
               if (error != null) item['ultimo_error'] = error;
             }
           }
-          final soloPendientes = list.where((e) => e['estado'] == 'PENDIENTE').toList();
+          final soloPendientes = list.where((e) => e['estado'] == 'PENDIENTE' || e['estado'] == 'CONFLICTO_STOCK').toList();
           await prefs.setString(key, jsonEncode(soloPendientes));
         }
       }

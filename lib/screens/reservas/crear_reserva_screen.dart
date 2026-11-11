@@ -45,13 +45,13 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
     final resService = Provider.of<ReservasService>(context, listen: false);
     final prendasActivas = resService.totalPrendasActivas;
 
-    // Validación estricta en cliente RN-04
+    // Validación de límite máximo de prendas activas por cliente
     if (prendasActivas + _cantidad > 5) {
       final disponibles = (5 - prendasActivas) > 0 ? (5 - prendasActivas) : 0;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'RN-04: Límite superado. Tienes $prendasActivas prenda(s) reservada(s) activa(s). Solo puedes reservar hasta $disponibles prenda(s) más.',
+            'Límite superado. Tienes $prendasActivas prenda(s) reservada(s) activa(s). Solo puedes reservar hasta $disponibles prenda(s) más.',
           ),
           backgroundColor: const Color(0xFFEF4444),
         ),
@@ -322,7 +322,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
               const SizedBox(height: 16),
             ],
 
-            // Condiciones de Reserva (RN-04 & CU-07)
+            // Condiciones de Reserva
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -338,7 +338,7 @@ class _CrearReservaScreenState extends State<CrearReservaScreen> {
                       Icon(Icons.verified_outlined, size: 18, color: Color(0xFF2563EB)),
                       SizedBox(width: 8),
                       Text(
-                        'Condiciones de Reserva (RN-04 & CU-07)',
+                        'Condiciones de Reserva',
                         style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E40AF)),
                       ),
                     ],

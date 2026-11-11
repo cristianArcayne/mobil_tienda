@@ -5,12 +5,14 @@ class ChatMessageModel {
   final bool isUser;
   final DateTime timestamp;
   final List<PrendaModel>? prendasSugeridas;
+  final OutfitRecomendadoModel? outfit;
 
   ChatMessageModel({
     required this.text,
     required this.isUser,
     required this.timestamp,
     this.prendasSugeridas,
+    this.outfit,
   });
 }
 

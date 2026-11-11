@@ -117,7 +117,7 @@ class CarritoService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Agregar prenda al carrito (CU-08 / RF-13)
+  // Agregar prenda al carrito (CU-08)
   Future<void> agregarPrenda({
     required PrendaModel prenda,
     required VariantePrendaModel variante,

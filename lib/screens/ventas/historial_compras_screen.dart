@@ -97,6 +97,23 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
 
   Widget _buildVentaCard(BuildContext context, VentaModel venta) {
     final esOffline = venta.estado == 'PENDIENTE_SYNC';
+    final esConflicto = venta.estado == 'CONFLICTO_STOCK' ||
+        venta.estado.contains('CONFLICTO') ||
+        venta.estado.contains('RECHAZAD');
+
+    Color badgeBg = const Color(0xFFECFDF5);
+    Color badgeText = const Color(0xFF059669);
+    String estadoTexto = venta.estado.toUpperCase();
+
+    if (esConflicto) {
+      badgeBg = const Color(0xFFFEE2E2);
+      badgeText = const Color(0xFFB91C1C);
+      estadoTexto = '❌ CONFLICTO • STOCK AGOTADO';
+    } else if (esOffline) {
+      badgeBg = const Color(0xFFFEF3C7);
+      badgeText = const Color(0xFFB45309);
+      estadoTexto = 'OFFLINE • PENDIENTE SYNC';
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -163,15 +180,15 @@ class _HistorialComprasScreenState extends State<HistorialComprasScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: esOffline ? const Color(0xFFFEF3C7) : const Color(0xFFECFDF5),
+                        color: badgeBg,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        esOffline ? 'OFFLINE • PENDIENTE SYNC' : venta.estado.toUpperCase(),
+                        estadoTexto,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
-                          color: esOffline ? const Color(0xFFB45309) : const Color(0xFF059669),
+                          color: badgeText,
                         ),
                       ),
                     ),

@@ -26,15 +26,10 @@ void main() async {
   // Conectar llave de navegación global para banners emergentes Overlay
   NotificacionesService.globalNavigatorKey = rootNavigatorKey;
 
-  // Cargar host configurado o migrar hacia Render por defecto
+  // Cargar host configurado si existe
   final savedHost = await StorageService.getServerHost();
   if (savedHost != null && savedHost.isNotEmpty) {
-    if (savedHost.contains('192.168.') || savedHost.contains('127.0.0.1') || savedHost.contains('localhost')) {
-      await StorageService.saveServerHost(Environment.defaultProductionUrl);
-      Environment.setCustomHost(Environment.defaultProductionUrl);
-    } else {
-      Environment.setCustomHost(savedHost);
-    }
+    Environment.setCustomHost(savedHost);
   }
 
   // Instanciar servicios con aislamiento estricto por usuario

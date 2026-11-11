@@ -277,7 +277,7 @@ class _ReservasScreenState extends State<ReservasScreen> {
     );
   }
 
-  void _confirmarCancelar(BuildContext context, ReservasService service, int id) {
+  Future<void> _confirmarCancelar(BuildContext context, ReservasService service, int id) async {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -286,9 +286,9 @@ class _ReservasScreenState extends State<ReservasScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Volver')),
           TextButton(
-            onPressed: () {
-              service.cancelarReserva(id);
-              Navigator.pop(ctx);
+            onPressed: () async {
+              await service.cancelarReserva(id);
+              if (context.mounted) Navigator.pop(ctx);
             },
             child: const Text('Sí, Cancelar', style: TextStyle(color: Color(0xFFEF4444))),
           ),

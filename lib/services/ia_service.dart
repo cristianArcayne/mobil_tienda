@@ -57,6 +57,7 @@ class IAService extends ChangeNotifier {
 
       String respuestaIA = 'Excelente elección. Te recomiendo combinar prendas con tonos neutros para un estilo equilibrado.';
       List<PrendaModel> sugerencias = [];
+      OutfitRecomendadoModel? outfitRecomendado;
 
       if (response != null && response is Map) {
         respuestaIA = response['respuesta_texto'] ??
@@ -64,6 +65,15 @@ class IAService extends ChangeNotifier {
             response['mensaje'] ??
             response['texto'] ??
             respuestaIA;
+
+        if (response.containsKey('outfit_recomendado') && response['outfit_recomendado'] != null) {
+          final outMap = response['outfit_recomendado'] as Map<String, dynamic>?;
+          if (outMap != null) {
+            try {
+              outfitRecomendado = OutfitRecomendadoModel.fromJson(outMap);
+            } catch (_) {}
+          }
+        }
 
         if (response.containsKey('prendas_sugeridas') && response['prendas_sugeridas'] != null) {
           final list = response['prendas_sugeridas'] as List? ?? [];
@@ -94,6 +104,7 @@ class IAService extends ChangeNotifier {
           isUser: false,
           timestamp: DateTime.now(),
           prendasSugeridas: sugerencias.isNotEmpty ? sugerencias : null,
+          outfit: outfitRecomendado,
         ),
       );
     } catch (_) {

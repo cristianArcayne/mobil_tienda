@@ -206,7 +206,7 @@ class ReservasService extends ChangeNotifier {
     }
   }
 
-  // Crear una nueva reserva Web-to-Store con validación RN-04 y soporte Offline UUIDv4 (CU-07)
+  // Crear una nueva reserva Web-to-Store con soporte Offline UUIDv4 (CU-07)
   Future<bool> crearReserva({
     required int sucursalId,
     required List<Map<String, dynamic>> items,
@@ -221,14 +221,14 @@ class ReservasService extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    // 1. VALIDACIÓN ESTRICTA RN-04: Máximo 5 prendas activas simultáneas en total
+    // 1. VALIDACIÓN ESTRICTA: Máximo 5 prendas activas simultáneas en total
     final nuevasPrendas = items.fold<int>(
       0,
       (sum, item) => sum + ((item['cantidad'] is int) ? (item['cantidad'] as int) : 1),
     );
 
     if (nuevasPrendas > 5) {
-      _errorMessage = 'RN-04: Solo puedes reservar un máximo de 5 prendas simultáneas por visita (seleccionaste $nuevasPrendas).';
+      _errorMessage = 'Solo puedes reservar un máximo de 5 prendas simultáneas por visita (seleccionaste $nuevasPrendas).';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -242,7 +242,7 @@ class ReservasService extends ChangeNotifier {
 
     if (prendasActivasActuales + nuevasPrendas > 5) {
       final disponibles = (5 - prendasActivasActuales) > 0 ? (5 - prendasActivasActuales) : 0;
-      _errorMessage = 'RN-04: Límite de 5 prendas alcanzado. Actualmente tienes $prendasActivasActuales prenda(s) reservada(s) activa(s). Solo puedes reservar hasta $disponibles prenda(s) adicional(es).';
+      _errorMessage = 'Límite de 5 prendas alcanzado. Actualmente tienes $prendasActivasActuales prenda(s) reservada(s) activa(s). Solo puedes reservar hasta $disponibles prenda(s) adicional(es).';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -257,7 +257,7 @@ class ReservasService extends ChangeNotifier {
 
     final horaLimpia = (horaEstimada ?? '18:00').trim();
 
-    // Identificador UUIDv4 único local (CU-07 / RN-07)
+    // Identificador UUIDv4 único local (CU-07)
     final uuidReserva = const Uuid().v4();
     final payload = {
       'uuid_transaccion': uuidReserva,
@@ -283,7 +283,7 @@ class ReservasService extends ChangeNotifier {
       return response != null;
     } catch (e) {
       final msg = e.toString();
-      if (msg.contains('RN-04') || msg.contains('Stock insuficiente') || msg.contains('Límite de 5 prendas')) {
+      if (msg.contains('Stock insuficiente') || msg.contains('Límite de 5 prendas')) {
         _errorMessage = msg.replaceAll('Exception: ', '');
         _isLoading = false;
         notifyListeners();
@@ -330,7 +330,7 @@ class ReservasService extends ChangeNotifier {
         payloadFinal['uuid_transaccion'] = uuidFinal;
       }
 
-      // Encolar o actualizar en SQLite Outbox (CU-07 / CU-14 / RF-13)
+      // Encolar o actualizar en SQLite Outbox
       await SqliteService.encolarOperacionOffline(
         uuidTransaccion: uuidFinal,
         usuarioId: cid ?? 'guest',

@@ -17,7 +17,7 @@ class ApiClient {
       return headers;
     }
 
-    // RN-05 / RF-02: Inyección obligatoria de identificador de empresa Multitenant
+    // Inyección obligatoria de identificador de empresa Multitenant
     final tenantId = await StorageService.getTenantId();
     headers['X-Tenant-ID'] = tenantId;
 

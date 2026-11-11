@@ -62,7 +62,7 @@ class CatalogoService extends ChangeNotifier {
     }
   }
 
-  // Cargar catálogo con disponibilidad omnicanal en tiempo real + Respaldo SQLite (CU-05 / RF-13)
+  // Cargar catálogo con disponibilidad omnicanal en tiempo real + Respaldo SQLite (CU-05)
   Future<void> cargarCatalogo({int? categoriaId, String? buscar, bool soloConStock = false}) async {
     _isLoading = true;
     _errorMessage = null;
@@ -103,7 +103,7 @@ class CatalogoService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      // Fallback inmediato a SQLite local (CU-05 / RF-13)
+      // Fallback inmediato a SQLite local (CU-05)
       String? catNombre;
       if (categoriaId != null) {
         final catMatch = _categorias.where((c) => c.id == categoriaId);

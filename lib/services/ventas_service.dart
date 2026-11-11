@@ -90,13 +90,16 @@ class VentasService extends ChangeNotifier {
         final totalOff = detallesOff.fold(0.0, (s, d) => s + d.subtotal);
         final uuidShort = (vOff['uuid_transaccion']?.toString() ?? 'OFFLINE').split('-').first.toUpperCase();
 
+        final estadoOp = vOff['estado']?.toString() ?? 'PENDIENTE_SYNC';
+        final esConflicto = estadoOp == 'CONFLICTO_STOCK';
+
         listaOff.add(VentaModel(
           id: (vOff['id'] is int) ? (vOff['id'] as int) : 999,
           fecha: vOff['fecha_creacion']?.toString() ?? DateTime.now().toIso8601String(),
           montoTotal: totalOff,
-          estado: 'PENDIENTE_SYNC',
+          estado: esConflicto ? 'CONFLICTO_STOCK' : 'PENDIENTE_SYNC',
           metodoPago: payload['metodo_pago']?.toString() ?? 'OFFLINE',
-          numeroFactura: 'PRE-OFF-$uuidShort',
+          numeroFactura: esConflicto ? 'RECHAZADA (STOCK AGOTADO)' : 'PRE-OFF-$uuidShort',
           direccionEnvio: payload['direccion_envio']?.toString() ?? 'Entrega coordinada',
           sucursalNombre: 'Sucursal Central (Sincronización Pendiente)',
           clienteNombre: payload['razon_social']?.toString() ?? _ultimoClienteId!,
@@ -110,7 +113,7 @@ class VentasService extends ChangeNotifier {
 
     // 1. Cargar pedidos preliminares offline encolados en SQLite Outbox para este usuario
     try {
-      var outbox = await SqliteService.obtenerOutboxPendientes(usuarioId: _ultimoClienteId);
+      var outbox = await SqliteService.obtenerOutboxPendientes(usuarioId: _ultimoClienteId, incluirConflictos: true);
       listaCombinada = construirListaOffline(outbox);
       if (listaCombinada.isNotEmpty) {
         _compras = List.from(listaCombinada);
@@ -149,7 +152,7 @@ class VentasService extends ChangeNotifier {
     }
   }
 
-  // Procesar venta digital e-commerce con checkout + Contingencia Offline UUIDv4 (RF-13 / RN-07)
+  // Procesar venta digital e-commerce con checkout + Contingencia Offline UUIDv4
   Future<VentaModel?> procesarCheckout({
     required List<Map<String, dynamic>> items,
     required String metodoPago,
@@ -213,7 +216,7 @@ class VentasService extends ChangeNotifier {
       }
     }
 
-    // Modo Offline (RF-13 / RN-07 / CU-14): Encolar pedido preliminar con UUIDv4 en SQLite
+    // Modo Offline: Encolar pedido preliminar con UUIDv4 en SQLite
     if (cid != null && cid.isNotEmpty) {
       payload['cliente_ci'] = cid;
     }
@@ -410,7 +413,7 @@ class VentasService extends ChangeNotifier {
       }
       throw Exception('Respuesta inválida del servidor Stripe');
     } catch (e) {
-      // Fallback de Contingencia Offline (CU-14 / RN-07 / RF-13): Encolar venta con UUIDv4 en SQLite Outbox
+      // Fallback de Contingencia Offline: Encolar venta con UUIDv4 en SQLite Outbox
       final uuidTx = const Uuid().v4();
       final offlinePayload = {
         'uuid_transaccion': uuidTx,
@@ -479,7 +482,7 @@ class VentasService extends ChangeNotifier {
   }
 
   // ===========================================================================
-  // CU-12: DEVOLUCIONES Y CAMBIO DE TALLA (GARANTÍA LEGAL DE 7 DÍAS - RN-01/RN-02)
+  // CU-12: DEVOLUCIONES Y CAMBIO DE TALLA (GARANTÍA LEGAL DE 7 DÍAS)
   // ===========================================================================
 
   Future<List<Map<String, dynamic>>> obtenerVariantesParaCambioTalla({int? ropaId, int? varianteId}) async {
@@ -498,7 +501,7 @@ class VentasService extends ChangeNotifier {
     return [];
   }
 
-  /// Procesa el Cambio de Talla bajo RN-01 (7 días) y RN-02 (Emisión de Nota de Cambio NC- sin anular factura)
+  /// Procesa el Cambio de Talla bajo garantía de 7 días (Emisión de Nota de Cambio NC- sin anular factura)
   Future<Map<String, dynamic>?> solicitarCambioTalla7Dias({
     required int ventaId,
     required int varianteDevueltaId,

@@ -1,4 +1,10 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 class Environment {
+  // Alternar entre backend local y la nube Render
+  static bool useLocalBackend = false;
+
   // URL de producción desplegada en la nube Render
   static const String defaultProductionUrl = 'https://tienda-backend-kvfk.onrender.com';
   static String? _customHost;
@@ -8,22 +14,25 @@ class Environment {
       _customHost = null;
       return;
     }
-    final h = host.trim();
-    // Si contiene IPs locales obsoletas de pruebas, ignorarlas para garantizar conexión a la nube Render
-    if (h.contains('192.168.') || h.contains('127.0.0.1') || h.contains('localhost')) {
-      _customHost = null;
-      return;
-    }
-    _customHost = h;
+    _customHost = host.trim();
   }
 
-  // URL por defecto apuntando a la nube Render
+  // URL por defecto (detecta automáticamente Android Emulator, Windows o Web)
   static String get baseUrl {
     if (_customHost != null && _customHost!.isNotEmpty) {
       if (_customHost!.startsWith('http://') || _customHost!.startsWith('https://')) {
         return _customHost!.endsWith('/') ? _customHost!.substring(0, _customHost!.length - 1) : _customHost!;
       }
-      return 'https://$_customHost';
+      return 'http://$_customHost';
+    }
+
+    if (useLocalBackend) {
+      if (kIsWeb) return 'http://127.0.0.1:8000';
+      try {
+        if (Platform.isAndroid) return 'http://10.0.2.2:8000';
+        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) return 'http://127.0.0.1:8000';
+      } catch (_) {}
+      return 'http://127.0.0.1:8000';
     }
 
     return defaultProductionUrl;

@@ -18,12 +18,12 @@ class _AsistenteModaScreenState extends State<AsistenteModaScreen> {
   final ScrollController _scrollController = ScrollController();
 
   final List<String> _sugerenciasRapidas = [
-    '👗 Outfit para una boda de noche',
-    '✨ Ropa casual para fin de semana',
-    '🔥 Prendas en descuento hoy',
+    '👗 Outfit para una cena en Equipetrol',
+    '✨ Look elegante para fiesta de noche',
+    '🔥 ¿Qué promociones y descuentos hay hoy?',
+    '📍 ¿Dónde quedan sus sucursales en Santa Cruz?',
     '👖 ¿Qué me pongo con un pantalón negro?',
-    '💎 Look elegante para graduación',
-    '🌸 Vestidos frescos de temporada',
+    '💎 Vestidos frescos de temporada',
   ];
 
   @override
@@ -185,6 +185,136 @@ class _AsistenteModaScreenState extends State<AsistenteModaScreen> {
                                       fontWeight: m.isUser ? FontWeight.w500 : FontWeight.w400,
                                     ),
                                   ),
+                                  if (m.outfit != null) ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [Color(0xFFEEF2FF), Color(0xFFF8FAFC)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(color: const Color(0xFFC7D2FE)),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFF4F46E5),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.auto_awesome, color: Colors.white, size: 14),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      m.outfit!.titulo,
+                                                      style: GoogleFonts.plusJakartaSans(
+                                                        fontSize: 12.5,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: const Color(0xFF1E1B4B),
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '${m.outfit!.estilo} • ${m.outfit!.scoreAfinidad.toStringAsFixed(0)}% Match Estilista',
+                                                      style: GoogleFonts.plusJakartaSans(
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: const Color(0xFF6366F1),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF10B981),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  '-10% COMBO',
+                                                  style: GoogleFonts.plusJakartaSans(
+                                                    fontSize: 9.5,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          if (m.outfit!.descripcionEstilistica.isNotEmpty) ...[
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              m.outfit!.descripcionEstilistica,
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 11,
+                                                color: const Color(0xFF475569),
+                                                fontStyle: FontStyle.italic,
+                                              ),
+                                            ),
+                                          ],
+                                          const SizedBox(height: 10),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Total Outfit (con descuento):',
+                                                    style: GoogleFonts.plusJakartaSans(
+                                                      fontSize: 10,
+                                                      color: const Color(0xFF64748B),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    'Bs. ${m.outfit!.precioTotalEstimado.toStringAsFixed(2)}',
+                                                    style: GoogleFonts.plusJakartaSans(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w800,
+                                                      color: const Color(0xFF047857),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              ElevatedButton.icon(
+                                                onPressed: () {
+                                                  if (m.outfit!.prendas.isNotEmpty) {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (_) => DetalleProductoScreen(prendaId: m.outfit!.prendas.first.id),
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                                icon: const Icon(Icons.checkroom, size: 14),
+                                                label: const Text('Ver Prenda', style: TextStyle(fontSize: 11)),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(0xFF4F46E5),
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  minimumSize: Size.zero,
+                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                   if (m.prendasSugeridas != null && m.prendasSugeridas!.isNotEmpty) ...[
                                     const SizedBox(height: 12),
                                     const Divider(height: 1, color: Color(0xFFE2E8F0)),
