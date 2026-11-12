@@ -122,12 +122,11 @@ class VentasService extends ChangeNotifier {
       }
 
       // Si hay operaciones offline pendientes y ya hay red, sincronizarlas antes de pedir la lista remota
-      if (!desdeAutoSync && outbox.isNotEmpty) {
-        final syncCount = await SyncService.instancia?.sincronizarPendientes(omitirRefreshCallback: true) ?? 0;
-        if (syncCount > 0) {
-          outbox = await SqliteService.obtenerOutboxPendientes(usuarioId: _ultimoClienteId);
-          listaCombinada = construirListaOffline(outbox);
-        }
+      final hayPendientesSync = outbox.any((o) => o['estado'] == 'PENDIENTE_SYNC');
+      if (!desdeAutoSync && hayPendientesSync) {
+        await SyncService.instancia?.sincronizarPendientes(omitirRefreshCallback: true);
+        outbox = await SqliteService.obtenerOutboxPendientes(usuarioId: _ultimoClienteId, incluirConflictos: true);
+        listaCombinada = construirListaOffline(outbox);
       }
     } catch (_) {}
 
@@ -205,10 +204,15 @@ class VentasService extends ChangeNotifier {
           return venta;
         }
       } catch (e) {
-        // Si es error explícito de stock 400 del servidor, informar; si es caída de red, encolar en SQLite Outbox
+        // Si es error explícito de stock 400/409 del servidor, informar; si es caída de red, encolar en SQLite Outbox
         final msg = e.toString();
-        if (msg.contains('Stock insuficiente') || msg.contains('400')) {
-          _errorMessage = msg;
+        final msgLow = msg.toLowerCase();
+        if (msgLow.contains('stock') ||
+            msgLow.contains('agotad') ||
+            msgLow.contains('conflicto') ||
+            msgLow.contains('400') ||
+            msgLow.contains('409')) {
+          _errorMessage = msg.replaceAll('Exception: ', '');
           _isLoading = false;
           notifyListeners();
           return null;
@@ -413,6 +417,17 @@ class VentasService extends ChangeNotifier {
       }
       throw Exception('Respuesta inválida del servidor Stripe');
     } catch (e) {
+      final msg = e.toString();
+      final msgLow = msg.toLowerCase();
+      if (msgLow.contains('stock') ||
+          msgLow.contains('agotad') ||
+          msgLow.contains('conflicto') ||
+          msgLow.contains('409')) {
+        _errorMessage = msg.replaceAll('Exception: ', '');
+        _isLoading = false;
+        notifyListeners();
+        return null;
+      }
       // Fallback de Contingencia Offline: Encolar venta con UUIDv4 en SQLite Outbox
       final uuidTx = const Uuid().v4();
       final offlinePayload = {

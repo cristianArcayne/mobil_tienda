@@ -156,6 +156,7 @@ class SyncService extends ChangeNotifier {
     notifyListeners();
 
     int sincronizadosExito = 0;
+    int conflictosDetectados = 0;
     bool huboErrorRed = false;
 
     try {
@@ -195,16 +196,19 @@ class SyncService extends ChangeNotifier {
             String mensajeConflicto = '';
 
             try {
+              final opItem = {
+                'uuid_offline': uuid,
+                'offline_uuid': uuid,
+                'codigo_transaccion': uuid,
+                'tipo': 'VENTA',
+                'detalles': payload['items'] ?? [],
+                ...payload,
+              };
               final resLote = await ApiClient.post(
                 '${Environment.ventas}/sincronizar-lote',
                 {
-                  'operaciones': [
-                    {
-                      'uuid_offline': uuid,
-                      'tipo': 'VENTA',
-                      ...payload,
-                    }
-                  ],
+                  'ventas': [opItem],
+                  'operaciones': [opItem],
                 },
               );
               if (resLote is Map && ((resLote['total_exitosas'] as num?) ?? 0) > 0) {
@@ -216,6 +220,8 @@ class SyncService extends ChangeNotifier {
                   final statusRes = primerRes['status']?.toString() ?? '';
                   final detRes = primerRes['detalle']?.toString() ?? '';
                   if (statusRes == 'CONFLICTO_STOCK' ||
+                      statusRes == 'EN_CONFLICTO' ||
+                      ((resLote['total_conflictos'] as num?) ?? 0) > 0 ||
                       detRes.toLowerCase().contains('conflicto') ||
                       detRes.toLowerCase().contains('stock') ||
                       detRes.toLowerCase().contains('agotad')) {
@@ -235,8 +241,25 @@ class SyncService extends ChangeNotifier {
               }
             }
 
+            if (!exitoOp && !huboConflictoStock) {
+              // 2. Fallback a /ecommerce únicamente si NO fue un conflicto de stock
+              try {
+                final resEcom = await ApiClient.post('${Environment.ventas}/ecommerce', payload);
+                if (resEcom != null) exitoOp = true;
+              } catch (errEcom) {
+                final errEcomStr = errEcom.toString().toLowerCase();
+                if (errEcomStr.contains('409') ||
+                    errEcomStr.contains('conflicto') ||
+                    errEcomStr.contains('stock') ||
+                    errEcomStr.contains('agotad')) {
+                  huboConflictoStock = true;
+                  mensajeConflicto = 'Conflicto de stock: la última unidad ya fue vendida por otro dispositivo.';
+                }
+              }
+            }
+
             if (huboConflictoStock) {
-              // NO hacer fallback a e-commerce. Marcar conflicto en SQLite y notificar
+              conflictosDetectados++;
               await SqliteService.marcarOutboxSincronizado(
                 uuid,
                 uid,
@@ -250,13 +273,39 @@ class SyncService extends ChangeNotifier {
                   message: 'No se pudo completar la venta: la última unidad ya fue vendida por otro dispositivo mientras estabas offline.',
                   tipo: 'DEVOLUCION',
                 );
+                showDialog(
+                  context: _currentContext!,
+                  builder: (ctx) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    title: Row(
+                      children: const [
+                        Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 28),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Conflicto de Stock Offline',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF991B1B)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    content: Text(
+                      'Error al procesar la compra offline:\n\nLa última unidad disponible de la prenda ya fue comprada y sincronizada primero por otro dispositivo.\n\nDetalle: $mensajeConflicto',
+                      style: const TextStyle(fontSize: 14, color: Color(0xFF334155)),
+                    ),
+                    actions: [
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFDC2626),
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: const Text('Entendido'),
+                      ),
+                    ],
+                  ),
+                );
               }
-            } else if (!exitoOp) {
-              // 2. Fallback a /ecommerce únicamente si NO fue un conflicto de stock
-              try {
-                final resEcom = await ApiClient.post('${Environment.ventas}/ecommerce', payload);
-                if (resEcom != null) exitoOp = true;
-              } catch (_) {}
             }
           } else if (tipo == 'FAVORITO') {
             final ropaId = payload['ropa_id'];
@@ -302,11 +351,11 @@ class SyncService extends ChangeNotifier {
       notifyListeners();
     }
 
-    if (sincronizadosExito > 0) {
+    if (sincronizadosExito > 0 || conflictosDetectados > 0) {
       if (!omitirRefreshCallback) {
         await _refrescarServiciosEnLinea(uid);
       }
-      if (_currentContext != null && _currentContext!.mounted) {
+      if (sincronizadosExito > 0 && conflictosDetectados == 0 && _currentContext != null && _currentContext!.mounted) {
         InAppNotificationBanner.show(
           _currentContext!,
           title: '🌐 Conexión Restablecida • Sincronización Completada',
