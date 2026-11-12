@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../models/prenda_model.dart';
 import '../../services/auth_service.dart';
@@ -113,6 +114,73 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
 
     // 5. Fallback garantizado a imagen principal o primera de la lista
     return p.imagenPrincipal ?? (p.imagenes.isNotEmpty ? p.imagenes.first : '');
+  }
+
+  Widget _buildFallbackDetail(PrendaModel p) {
+    IconData icon = Icons.checkroom_rounded;
+    final nom = p.nombre.toLowerCase();
+    if (nom.contains('chaqueta') || nom.contains('chamarra') || nom.contains('cuero') || nom.contains('denim')) {
+      icon = Icons.dry_cleaning_rounded;
+    } else if (nom.contains('lentes') || nom.contains('gafas')) {
+      icon = Icons.visibility_rounded;
+    } else if (nom.contains('zapato') || nom.contains('zapatilla') || nom.contains('calzado') || nom.contains('runner')) {
+      icon = Icons.snowshoeing_rounded;
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Icon(icon, size: 52, color: const Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              p.categoriaNombre ?? 'Colección de Moda',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                letterSpacing: 1.0,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF94A3B8),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                p.nombre,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _cargarDetalle() async {
@@ -341,6 +409,22 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: const Color(0xFFF8FAFC),
+                                child: const Center(
+                                  child: SizedBox(
+                                    width: 32,
+                                    height: 32,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Color(0xFFC5A059),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                             errorBuilder: (_, __, ___) {
                               if (p.imagenPrincipal != null && p.imagenPrincipal!.isNotEmpty && currentImg != p.imagenPrincipal) {
                                 return Image.network(
@@ -349,24 +433,15 @@ class _DetalleProductoScreenState extends State<DetalleProductoScreen> {
                                   fit: BoxFit.cover,
                                   width: double.infinity,
                                   height: double.infinity,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    color: const Color(0xFFF1F5F9),
-                                    child: const Icon(Icons.checkroom, size: 80, color: Color(0xFF94A3B8)),
-                                  ),
+                                  errorBuilder: (_, __, ___) => _buildFallbackDetail(p),
                                 );
                               }
-                              return Container(
-                                color: const Color(0xFFF1F5F9),
-                                child: const Icon(Icons.checkroom, size: 80, color: Color(0xFF94A3B8)),
-                              );
+                              return _buildFallbackDetail(p);
                             },
                           ),
                         );
                       }
-                      return Container(
-                        color: const Color(0xFFF1F5F9),
-                        child: const Icon(Icons.checkroom, size: 80, color: Color(0xFF94A3B8)),
-                      );
+                      return _buildFallbackDetail(p);
                     },
                   ),
                   Positioned(

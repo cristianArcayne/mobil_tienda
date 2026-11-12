@@ -26,6 +26,75 @@ class PrendaCard extends StatefulWidget {
 class _PrendaCardState extends State<PrendaCard> {
   String? _cardImagePreview;
 
+  Widget _buildFallbackCard() {
+    IconData icon = Icons.checkroom_rounded;
+    final nom = widget.prenda.nombre.toLowerCase();
+    if (nom.contains('chaqueta') || nom.contains('chamarra') || nom.contains('cuero') || nom.contains('denim')) {
+      icon = Icons.dry_cleaning_rounded;
+    } else if (nom.contains('lentes') || nom.contains('gafas')) {
+      icon = Icons.visibility_rounded;
+    } else if (nom.contains('zapato') || nom.contains('zapatilla') || nom.contains('calzado') || nom.contains('runner')) {
+      icon = Icons.snowshoeing_rounded;
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFF8FAFC),
+            Color(0xFFE2E8F0),
+          ],
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(icon, size: 28, color: const Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            widget.prenda.categoriaNombre ?? 'Colección',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 9,
+              letterSpacing: 0.8,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF94A3B8),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            widget.prenda.nombre,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF334155),
+              height: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _handleIA3DTap(BuildContext context) {
     final auth = Provider.of<AuthService>(context, listen: false);
     if (!auth.isAuthenticated) {
@@ -135,13 +204,22 @@ class _PrendaCardState extends State<PrendaCard> {
                             (_cardImagePreview ?? widget.prenda.imagenPrincipal)!,
                             key: ValueKey(_cardImagePreview ?? widget.prenda.imagenPrincipal),
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Center(
-                              child: Icon(Icons.checkroom, size: 40, color: Color(0xFFCBD5E1)),
-                            ),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFFC5A059),
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (_, __, ___) => _buildFallbackCard(),
                           )
-                        : const Center(
-                            child: Icon(Icons.checkroom, size: 40, color: Color(0xFFCBD5E1)),
-                          ),
+                        : _buildFallbackCard(),
                   ),
 
                   // Badge Superior Izquierdo: ICONIC / NUEVO

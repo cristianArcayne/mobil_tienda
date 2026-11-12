@@ -93,9 +93,28 @@ class CarritoScreen extends StatelessWidget {
                                 child: item.imagenUrl != null && item.imagenUrl!.isNotEmpty
                                     ? ClipRRect(
                                         borderRadius: BorderRadius.circular(10),
-                                        child: Image.network(item.imagenUrl!, fit: BoxFit.cover),
+                                        child: Image.network(
+                                          item.imagenUrl!,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) return child;
+                                            return const Center(
+                                              child: SizedBox(
+                                                width: 18,
+                                                height: 18,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Color(0xFFC5A059),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder: (_, __, ___) => const Center(
+                                            child: Icon(Icons.checkroom_rounded, color: Color(0xFF94A3B8), size: 28),
+                                          ),
+                                        ),
                                       )
-                                    : const Icon(Icons.checkroom, color: Color(0xFF94A3B8)),
+                                    : const Icon(Icons.checkroom_rounded, color: Color(0xFF94A3B8)),
                               ),
                               const SizedBox(width: 14),
 
